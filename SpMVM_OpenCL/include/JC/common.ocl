@@ -1,0 +1,39 @@
+void work_group_copy(
+    __local  Type * dst,
+    __global Type * src,
+                int dst_rows,
+                int dst_cols,
+                int src_rows,
+                int src_cols,
+                int first_row,
+                int first_col
+                )
+{
+    int group_rows = get_local_size(1);
+    int group_cols = get_local_size(0);
+
+    int src_row = first_row;
+    int dst_row = get_local_id(1);
+    for(; dst_row < dst_rows; dst_row += group_rows, src_row += group_rows) 
+    {
+        int src_row_index = src_row * src_cols;
+        int dst_row_index = dst_row * dst_cols;
+
+        bool row_in_bounds = (src_row >= 0 && src_row < src_rows);
+
+        int src_col = first_col;
+        int dst_col = get_local_id(0);
+        for(; dst_col < dst_cols; dst_col += group_cols, src_col += group_cols)
+        {
+            bool col_in_bounds = (src_col >= 0 && src_col < src_cols);
+            int dst_index = dst_row_index + dst_col;
+
+            if (!row_in_bounds || !col_in_bounds)
+                dst[dst_index] = 0;
+            else {
+                int src_index = src_row_index + src_col;
+                dst[dst_index] = src[src_index];
+            }
+        }
+    } 
+}
