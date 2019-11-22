@@ -2,6 +2,7 @@
 Repository containing a VS2019 solution for testing out different SpMV solutions in OpenCL with the VS CUDA Profiler
 
 -------------------------------- Installation --------------------------------
+
 Requirements:
    - Visual Studio 2019 (other versions not tested)
    - CUDA Toolkit (implementation is based on v10.1)
@@ -11,6 +12,7 @@ Requirements:
 The required lib/hpp files mentioned above have been included with this repo, however, it is wise to still go through the installation process of all the listed dependencies in case I missed anything.
 
 --------------------------------- How to use ----------------------------------
+
 Open VS solution file "SpMVM_OpenCL.sln". 
 Right-click on the solution in the Solution Explorer window and click on "Rebuild Solution".
 
