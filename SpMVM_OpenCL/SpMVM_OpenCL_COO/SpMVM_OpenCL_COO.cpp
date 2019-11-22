@@ -262,7 +262,7 @@ int main(void)
 	if (coo.nnz < WARP_SIZE)
 		y = spmv_COO_serial(&coo, x);
 	else
-		y = spmv_COO_serial(&coo, x);
+		y = spmv_COO_serial(&coo, x); // spmv_COO_flat does not work properly
 	std::cout << std::endl << "-- FINISHED COO KERNEL OPERATION --" << std::endl << std::endl;
 	if (COO_OUTPUT_LOG)
 	{
