@@ -21,3 +21,5 @@ However, it is much easier to just run each implementation from VS itself.
 
 To do this, right click on the project you wish to run (by project, I mean implementation but in VS terminology these are labeled as 'projects') and select "Select as StartUp Project". 
 Now, whenever you press either CTRL+F5 (Release mode) or F5 (Debug mode), VS will compile the selected project and run it.
+
+The implementations are entirely configurable via the compiler_config.h located at ...\VS2019_SpMV_OpenCL_Implementation\SpMVM_OpenCL\config
