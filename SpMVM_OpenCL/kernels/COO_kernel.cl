@@ -45,7 +45,7 @@ __kernel void spmv_coo_flat_s(int nnz, int interval_size,
 	__global float* dst_y,
 	__global int* temp_rows,
 	__global float* temp_vals,
-	__local int* rows,
+	__local unsigned int* rows,
 	__local float* vals)
 {
 	int thread_id = get_global_id(0);                 // global thread index
@@ -67,7 +67,7 @@ __kernel void spmv_coo_flat_s(int nnz, int interval_size,
 
 	for (int n = interval_begin + thread_lane; n < interval_end; n += WARP_SIZE)
 	{
-		int row = d_ir[n];                                         // row index (i)
+		unsigned int row = d_ir[n];                                         // row index (i)
 		float val = d_val[n] * d_x[d_jc[n]];							// A(i,j) * d_x(j)
 
 		barrier(CLK_GLOBAL_MEM_FENCE);
@@ -81,6 +81,8 @@ __kernel void spmv_coo_flat_s(int nnz, int interval_size,
 		}
 
 		val = segreduce_warp_s(thread_lane, row, val, rows, vals);      // segmented reduction in shared memory
+		
+		barrier(CLK_LOCAL_MEM_FENCE);
 
 		if (thread_lane < 31 && row != rows[thread_local_id + 1])
 			dst_y[row] += val;                                            // row terminated
@@ -203,7 +205,7 @@ __kernel void spmv_coo_flat_d(int nnz, int interval_size,
 	__global double* dst_y,
 	__global int* temp_rows,
 	__global double* temp_vals,
-	__local int* rows,
+	__local unsigned int* rows,
 	__local double* vals)
 {
 	int thread_id = get_global_id(0);                 // global thread index
@@ -225,8 +227,10 @@ __kernel void spmv_coo_flat_d(int nnz, int interval_size,
 
 	for (int n = interval_begin + thread_lane; n < interval_end; n += WARP_SIZE)
 	{
-		int row = d_ir[n];                                         // row index (i)
+		unsigned int row = d_ir[n];                                         // row index (i)
 		double val = d_val[n] * d_x[d_jc[n]];                            // A(i,j) * d_x(j)
+
+		barrier(CLK_GLOBAL_MEM_FENCE);
 
 		if (thread_lane == 0)
 		{
@@ -237,6 +241,8 @@ __kernel void spmv_coo_flat_d(int nnz, int interval_size,
 		}
 
 		val = segreduce_warp_d(thread_lane, row, val, rows, vals);      // segmented reduction in shared memory
+		
+		barrier(CLK_LOCAL_MEM_FENCE);
 
 		if (thread_lane < 31 && row != rows[thread_local_id + 1])
 			dst_y[row] += val;                                            // row terminated

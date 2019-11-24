@@ -288,6 +288,7 @@ std::vector<CL_REAL> spmv_HLL_LOCAL(const struct hll_t* d_hll, const std::vector
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
 	//
+	std::cout << "!!! A work-group uses " << local_byte_size_shhoff << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 	for (int r = 0; r < REPEAT; r++)
 	{
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());

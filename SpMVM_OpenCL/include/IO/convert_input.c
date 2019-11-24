@@ -806,8 +806,7 @@ void COO_To_HYBELLG(struct coo_t* coo, struct hybellg_t* hyb, int log)
 	fprintf(stdout, "HYB(ELL-G): Original Matrix N = %d, NNZ = %d\n", n, nnz);
 	COO_To_CSR(coo, &csr, 0);
 	IndexType k = compute_hyb_cols_per_row(&csr), i, j, index;
-	k = 2;
-	if (log) fprintf(stdout, "ELL-G part has %d columns\n\n", k);
+	fprintf(stdout, "ELL-G part has %d columns\n\n", k);
 	CSR_To_ELLG_K(&csr, &hyb->ellg, k, log);
 	FreeCSR(&csr);
 	IndexType* nnz_offset_per_row = (IndexType*)malloc(n * sizeof(IndexType));
@@ -834,13 +833,13 @@ void COO_To_HYBELLG(struct coo_t* coo, struct hybellg_t* hyb, int log)
 			*(nnz_offset_per_row + index) = *(nnz_offset_per_row + index) - 1;
 	}
 
+	fprintf(stdout, "\nCOO: Matrix N = %d, NNZ = %d\n", n, hyb->coo.nnz);
 	if (log)
 	{
-		fprintf(stdout, "\nCOO: Matrix N = %d, NNZ = %d\n", n, hyb->coo.nnz);
 		for (IndexType i = 0; i < hyb->coo.nnz; i++)
 			fprintf(stdout, "%d %d %20.19g\n", hyb->coo.ir[i], hyb->coo.jc[i], hyb->coo.val[i]);
-		fprintf(stdout, "\n");
 	}
+	fprintf(stdout, "\n");
 }
 
 /*--------------------------------------------------*/
@@ -852,8 +851,7 @@ void COO_To_HYBHLL(struct coo_t* coo, struct hybhll_t* hyb, int log)
 	fprintf(stdout, "HYB(HLL): Original Matrix N = %d, NNZ = %d\n", n, nnz);
 	COO_To_CSR(coo, &csr, 0);
 	IndexType k = compute_hyb_cols_per_row(&csr), i, j, index;
-	k = 2;
-	if (log) fprintf(stdout, "HLL part has %d columns\n\n", k);
+	fprintf(stdout, "HLL part has %d columns\n\n", k);
 	CSR_To_HLL_K(&csr, &hyb->hll, k, log);
 	FreeCSR(&csr);
 	IndexType* nnz_offset_per_row = (IndexType*)malloc(n * sizeof(IndexType));
@@ -880,13 +878,13 @@ void COO_To_HYBHLL(struct coo_t* coo, struct hybhll_t* hyb, int log)
 			*(nnz_offset_per_row + index) = *(nnz_offset_per_row + index) - 1;
 	}
 
+	fprintf(stdout, "\nCOO: Matrix N = %d, NNZ = %d\n", n, hyb->coo.nnz);
 	if (log)
 	{
-		fprintf(stdout, "\nCOO: Matrix N = %d, NNZ = %d\n", n, hyb->coo.nnz);
 		for (IndexType i = 0; i < hyb->coo.nnz; i++)
 			fprintf(stdout, "%d %d %20.19g\n", hyb->coo.ir[i], hyb->coo.jc[i], hyb->coo.val[i]);
-		fprintf(stdout, "\n");
 	}
+	fprintf(stdout, "\n");
 }
 
 // taken from sc2009_spmv (by: Nathan Bell & Michael Garland) and altered

@@ -260,7 +260,7 @@ int main(void)
 
 	std::cout << std::endl << "-- STARTING COO KERNEL OPERATION --" << std::endl << std::endl;
 	std::vector<CL_REAL> y;
-	if (true) // if (coo->nnz < WARP_SIZE)
+	if (true) // if (coo.nnz < WARP_SIZE)
 		y = spmv_COO_serial(&coo, x);
 	else
 		y = spmv_COO_flat(&coo, x); // spmv_COO_flat does not work properly

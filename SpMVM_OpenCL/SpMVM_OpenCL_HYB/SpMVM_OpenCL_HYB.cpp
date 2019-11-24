@@ -52,27 +52,33 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 	cl::Kernel kernel_reduce_update{ program_coo, "spmv_coo_reduce_update_s" };
 #endif
 	//
-	size_t byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
-	size_t byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
 	//
-	cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-	cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
 	cl::Buffer d_x_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_x };
 	cl::Buffer dst_y_buffer{ context, CL_MEM_WRITE_ONLY, byte_size_dst_y };
 	//
-	queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
-	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->ellg.a);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel_ell.setArg(0, d_hyb->ellg.n);
-	kernel_ell.setArg(1, *(d_hyb->ellg.nell + d_hyb->ellg.n));
-	kernel_ell.setArg(2, d_hyb->ellg.stride);
-	kernel_ell.setArg(3, d_jcoeff_buffer);
-	kernel_ell.setArg(4, d_a_buffer);
-	kernel_ell.setArg(5, d_x_buffer);
-	kernel_ell.setArg(6, dst_y_buffer);
+	if (d_hyb->ellg.nnz > 0)
+	{
+		size_t byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
+		size_t byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
+		//
+		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		//
+		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
+		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->ellg.a);
+		//
+		kernel_ell.setArg(0, d_hyb->ellg.n);
+		kernel_ell.setArg(1, *(d_hyb->ellg.nell + d_hyb->ellg.n));
+		kernel_ell.setArg(2, d_hyb->ellg.stride);
+		kernel_ell.setArg(3, d_jcoeff_buffer);
+		kernel_ell.setArg(4, d_a_buffer);
+		kernel_ell.setArg(5, d_x_buffer);
+		kernel_ell.setArg(6, dst_y_buffer);
+	}
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -101,12 +107,16 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 		//
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_ell,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->ellg.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_ell,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_serial,
 					queue,
@@ -191,16 +201,22 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 		kernel_reduce_update.setArg(4, cl::Local(local_byte_size_shrows_2));
 		kernel_reduce_update.setArg(5, cl::Local(local_byte_size_shvals_2));
 		//
+		std::cout << "!!! COO: kernel_flat: A work-group uses " << local_byte_size_shrows_1 + local_byte_size_shvals_1 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+		std::cout << "!!! COO: kernel_reduce_update: A work-group uses " << local_byte_size_shrows_2 + local_byte_size_shvals_2 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
 			queue.enqueueWriteBuffer(temp_rows_buffer, CL_TRUE, 0, byte_size_temp_rows, temp_rows.data());
 			queue.enqueueWriteBuffer(temp_vals_buffer, CL_TRUE, 0, byte_size_temp_vals, temp_vals.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_ell,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->ellg.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_ell,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_flat,
 					queue,
@@ -260,31 +276,37 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 	cl::Kernel kernel_serial{ program_coo, "spmv_coo_serial_s" };
 	cl::Kernel kernel_reduce_update{ program_coo, "spmv_coo_reduce_update_s" };
 #endif
-    //
-    size_t byte_size_d_nell = (d_hyb->ellg.n + 1) * sizeof(cl_uint);
-    size_t byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
-    size_t byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
-    size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
-    size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
-    //
-    cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
-    cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-    cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
-    cl::Buffer d_x_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_x };
-    cl::Buffer dst_y_buffer{ context, CL_MEM_WRITE_ONLY, byte_size_dst_y };
-    //
-    queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->ellg.nell);
-    queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
-    queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->ellg.a);
-    queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
-    //
-	kernel_ellg.setArg(0, d_hyb->ellg.n);
-	kernel_ellg.setArg(1, d_hyb->ellg.stride);
-	kernel_ellg.setArg(2, d_nell_buffer);
-	kernel_ellg.setArg(3, d_jcoeff_buffer);
-	kernel_ellg.setArg(4, d_a_buffer);
-	kernel_ellg.setArg(5, d_x_buffer);
-	kernel_ellg.setArg(6, dst_y_buffer);
+	//
+	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
+	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
+	//
+	cl::Buffer d_x_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_x };
+	cl::Buffer dst_y_buffer{ context, CL_MEM_WRITE_ONLY, byte_size_dst_y };
+	//
+	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
+	//
+	if (d_hyb->ellg.nnz > 0)
+	{
+		size_t byte_size_d_nell = (d_hyb->ellg.n + 1) * sizeof(cl_uint);
+		size_t byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
+		size_t byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
+		//
+		cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
+		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		//
+		queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->ellg.nell);
+		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
+		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->ellg.a);
+		//
+		kernel_ellg.setArg(0, d_hyb->ellg.n);
+		kernel_ellg.setArg(1, d_hyb->ellg.stride);
+		kernel_ellg.setArg(2, d_nell_buffer);
+		kernel_ellg.setArg(3, d_jcoeff_buffer);
+		kernel_ellg.setArg(4, d_a_buffer);
+		kernel_ellg.setArg(5, d_x_buffer);
+		kernel_ellg.setArg(6, dst_y_buffer);
+	}
     //
     cl_ulong nanoseconds;
     cl_ulong total_nanoseconds = 0;
@@ -313,12 +335,16 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 		//
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_ellg,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->ellg.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_ellg,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_serial,
 					queue,
@@ -403,16 +429,22 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 		kernel_reduce_update.setArg(4, cl::Local(local_byte_size_shrows_2));
 		kernel_reduce_update.setArg(5, cl::Local(local_byte_size_shvals_2));
 		//
+		std::cout << "!!! COO: kernel_flat: A work-group uses " << local_byte_size_shrows_1 + local_byte_size_shvals_1 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+		std::cout << "!!! COO: kernel_reduce_update: A work-group uses " << local_byte_size_shrows_2 + local_byte_size_shvals_2 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
 			queue.enqueueWriteBuffer(temp_rows_buffer, CL_TRUE, 0, byte_size_temp_rows, temp_rows.data());
 			queue.enqueueWriteBuffer(temp_vals_buffer, CL_TRUE, 0, byte_size_temp_vals, temp_vals.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_ellg,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->ellg.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_ellg,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_flat,
 					queue,
@@ -471,36 +503,42 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 	cl::Kernel kernel_flat{ program_coo, "spmv_coo_flat_s" };
 	cl::Kernel kernel_serial{ program_coo, "spmv_coo_serial_s" };
 	cl::Kernel kernel_reduce_update{ program_coo, "spmv_coo_reduce_update_s" };
-#endif
+#endif*
 	//
-	size_t byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
-	size_t byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
-	size_t byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
-	size_t byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
 	//
-	cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
-	cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-	cl::Buffer d_hoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
-	cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
 	cl::Buffer d_x_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_x };
 	cl::Buffer dst_y_buffer{ context, CL_MEM_WRITE_ONLY, byte_size_dst_y };
 	//
-	queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->hll.nell);
-	queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->hll.jcoeff);
-	queue.enqueueWriteBuffer(d_hoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hyb->hll.hoff);
-	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->hll.a);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel_hll.setArg(0, d_hyb->hll.n);
-	kernel_hll.setArg(1, HLL_HACKSIZE);
-	kernel_hll.setArg(2, d_nell_buffer);
-	kernel_hll.setArg(3, d_jcoeff_buffer);
-	kernel_hll.setArg(4, d_hoff_buffer);
-	kernel_hll.setArg(5, d_a_buffer);
-	kernel_hll.setArg(6, d_x_buffer);
-	kernel_hll.setArg(7, dst_y_buffer);
+	if (d_hyb->hll.nnz > 0)
+	{
+		size_t byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
+		size_t byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
+		size_t byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
+		size_t byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
+		//
+		cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
+		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		cl::Buffer d_hoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
+		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		//
+		queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->hll.nell);
+		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->hll.jcoeff);
+		queue.enqueueWriteBuffer(d_hoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hyb->hll.hoff);
+		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->hll.a);
+		//
+		kernel_hll.setArg(0, d_hyb->hll.n);
+		kernel_hll.setArg(1, HLL_HACKSIZE);
+		kernel_hll.setArg(2, d_nell_buffer);
+		kernel_hll.setArg(3, d_jcoeff_buffer);
+		kernel_hll.setArg(4, d_hoff_buffer);
+		kernel_hll.setArg(5, d_a_buffer);
+		kernel_hll.setArg(6, d_x_buffer);
+		kernel_hll.setArg(7, dst_y_buffer);
+	}
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -529,12 +567,16 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 		//
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_hll,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->hll.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_hll,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_serial,
 					queue,
@@ -619,16 +661,22 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 		kernel_reduce_update.setArg(4, cl::Local(local_byte_size_shrows_2));
 		kernel_reduce_update.setArg(5, cl::Local(local_byte_size_shvals_2));
 		//
+		std::cout << "!!! COO: kernel_flat: A work-group uses " << local_byte_size_shrows_1 + local_byte_size_shvals_1 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+		std::cout << "!!! COO: kernel_reduce_update: A work-group uses " << local_byte_size_shrows_2 + local_byte_size_shvals_2 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
 			queue.enqueueWriteBuffer(temp_rows_buffer, CL_TRUE, 0, byte_size_temp_rows, temp_rows.data());
 			queue.enqueueWriteBuffer(temp_vals_buffer, CL_TRUE, 0, byte_size_temp_vals, temp_vals.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_hll,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->hll.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_hll,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_flat,
 					queue,
@@ -690,40 +738,48 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 	cl::Kernel kernel_reduce_update{ program_coo, "spmv_coo_reduce_update_s" };
 #endif
 	//
-	size_t byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
-	size_t byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
-	size_t byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
-	size_t byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
 	//
-	cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
-	cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-	cl::Buffer d_hoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
-	cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
 	cl::Buffer d_x_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_x };
 	cl::Buffer dst_y_buffer{ context, CL_MEM_WRITE_ONLY, byte_size_dst_y };
 	//
-	cl_ulong size;
-	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
-	//
-	size_t local_byte_size_shhoff = WORKGROUP_SIZE / HLL_HACKSIZE * sizeof(cl_uint);
-	//
-	queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->hll.nell);
-	queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->hll.jcoeff);
-	queue.enqueueWriteBuffer(d_hoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hyb->hll.hoff);
-	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->hll.a);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel_hll_local.setArg(0, d_hyb->hll.n);
-	kernel_hll_local.setArg(1, HLL_HACKSIZE);
-	kernel_hll_local.setArg(2, d_nell_buffer);
-	kernel_hll_local.setArg(3, d_jcoeff_buffer);
-	kernel_hll_local.setArg(4, d_hoff_buffer);
-	kernel_hll_local.setArg(5, d_a_buffer);
-	kernel_hll_local.setArg(6, d_x_buffer);
-	kernel_hll_local.setArg(7, dst_y_buffer);
-	kernel_hll_local.setArg(8, cl::Local(local_byte_size_shhoff));
+	if (d_hyb->hll.nnz > 0)
+	{
+		size_t byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
+		size_t byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
+		size_t byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
+		size_t byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
+		//
+		cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
+		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		cl::Buffer d_hoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
+		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		//
+		queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->hll.nell);
+		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->hll.jcoeff);
+		queue.enqueueWriteBuffer(d_hoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hyb->hll.hoff);
+		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->hll.a);
+		//
+		cl_ulong size;
+		device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
+		//
+		size_t local_byte_size_shhoff = WORKGROUP_SIZE / HLL_HACKSIZE * sizeof(cl_uint);
+		//
+		kernel_hll_local.setArg(0, d_hyb->hll.n);
+		kernel_hll_local.setArg(1, HLL_HACKSIZE);
+		kernel_hll_local.setArg(2, d_nell_buffer);
+		kernel_hll_local.setArg(3, d_jcoeff_buffer);
+		kernel_hll_local.setArg(4, d_hoff_buffer);
+		kernel_hll_local.setArg(5, d_a_buffer);
+		kernel_hll_local.setArg(6, d_x_buffer);
+		kernel_hll_local.setArg(7, dst_y_buffer);
+		kernel_hll_local.setArg(8, cl::Local(local_byte_size_shhoff));
+		//
+		std::cout << "!!! HLL_LOCAL: A work-group uses " << local_byte_size_shhoff << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+	}
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -752,12 +808,16 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 		//
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_hll_local,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->hll.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_hll_local,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_serial,
 					queue,
@@ -842,16 +902,22 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 		kernel_reduce_update.setArg(4, cl::Local(local_byte_size_shrows_2));
 		kernel_reduce_update.setArg(5, cl::Local(local_byte_size_shvals_2));
 		//
+		std::cout << "!!! COO: kernel_flat: A work-group uses " << local_byte_size_shrows_1 + local_byte_size_shvals_1 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+		std::cout << "!!! COO: kernel_reduce_update: A work-group uses " << local_byte_size_shrows_2 + local_byte_size_shvals_2 << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 		for (int r = 0; r < REPEAT; r++)
 		{
+			nanoseconds = 0;
 			queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
 			queue.enqueueWriteBuffer(temp_rows_buffer, CL_TRUE, 0, byte_size_temp_rows, temp_rows.data());
 			queue.enqueueWriteBuffer(temp_vals_buffer, CL_TRUE, 0, byte_size_temp_vals, temp_vals.data());
-			nanoseconds =
-				jc::run_and_time_kernel(kernel_hll_local,
-					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
-					cl::NDRange(WORKGROUP_SIZE));
+			if (d_hyb->hll.nnz > 0)
+			{
+				nanoseconds +=
+					jc::run_and_time_kernel(kernel_hll_local,
+						queue,
+						cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
+						cl::NDRange(WORKGROUP_SIZE));
+			}
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_flat,
 					queue,
