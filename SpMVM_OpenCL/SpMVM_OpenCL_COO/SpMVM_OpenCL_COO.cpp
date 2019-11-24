@@ -6,7 +6,7 @@
 #include<string>
 #include<windows.h>
 
-#include<util_time.hpp>
+#include<util_misc.hpp>
 #include<CL/cl.h>
 #include<JC/util.hpp>
 #include<IO/mmio.h>
@@ -132,7 +132,6 @@ std::vector<CL_REAL> spmv_COO_flat(const struct coo_t* d_coo, const std::vector<
 	cl::Kernel kernel_serial{ program, "spmv_coo_serial_s" };
 	cl::Kernel kernel_reduce_update{ program, "spmv_coo_reduce_update_s" };
 #endif
-
 	//
 	size_t byte_size_d_ir = d_coo->nnz * sizeof(cl_uint);
 	size_t byte_size_d_jc = d_coo->nnz * sizeof(cl_uint);
@@ -242,6 +241,8 @@ int main(void)
 
 	std::string input_filename = (INPUT_FOLDER + (std::string)"/" + INPUT_FILE);
 
+	if (createOutputDirectory(OUTPUT_FOLDER, COO_OUTPUT_FOLDER))
+		exit(1);
 	std::string output_file = (OUTPUT_FOLDER + (std::string)"/" + COO_OUTPUT_FOLDER + (std::string)"/" + OUTPUT_FILENAME + getTimeOfRun() + OUTPUT_FILEFORMAT);
 
 	std::cout << "!!! OUTPUT IS BEING WRITTEN TO " << output_file << " !!!" << std::endl;
@@ -259,10 +260,10 @@ int main(void)
 
 	std::cout << std::endl << "-- STARTING COO KERNEL OPERATION --" << std::endl << std::endl;
 	std::vector<CL_REAL> y;
-	if (coo.nnz < WARP_SIZE)
+	if (true) // if (coo->nnz < WARP_SIZE)
 		y = spmv_COO_serial(&coo, x);
 	else
-		y = spmv_COO_serial(&coo, x); // spmv_COO_flat does not work properly
+		y = spmv_COO_flat(&coo, x); // spmv_COO_flat does not work properly
 	std::cout << std::endl << "-- FINISHED COO KERNEL OPERATION --" << std::endl << std::endl;
 	if (COO_OUTPUT_LOG)
 	{

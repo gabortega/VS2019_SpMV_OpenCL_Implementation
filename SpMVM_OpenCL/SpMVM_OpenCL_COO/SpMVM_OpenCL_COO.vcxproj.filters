@@ -47,7 +47,7 @@
     <ClInclude Include="..\config\compiler_config.h">
       <Filter>Header Files\compiler_config</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\util_time.hpp">
+    <ClInclude Include="..\include\util_misc.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -70,6 +70,8 @@ __kernel void spmv_coo_flat_s(int nnz, int interval_size,
 		int row = d_ir[n];                                         // row index (i)
 		float val = d_val[n] * d_x[d_jc[n]];							// A(i,j) * d_x(j)
 
+		barrier(CLK_GLOBAL_MEM_FENCE);
+
 		if (thread_lane == 0)
 		{
 			if (row == rows[thread_local_id + 31])

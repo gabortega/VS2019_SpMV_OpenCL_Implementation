@@ -6,7 +6,7 @@
 #include<string>
 #include<windows.h>
 
-#include<util_time.hpp>
+#include<util_misc.hpp>
 #include<CL/cl.h>
 #include<JC/util.hpp>
 #include<IO/mmio.h>
@@ -123,6 +123,8 @@ int main(void)
 
 	std::string input_filename = (INPUT_FOLDER + (std::string)"/" + INPUT_FILE);
 
+	if (createOutputDirectory(OUTPUT_FOLDER, JAD_OUTPUT_FOLDER))
+		exit(1);
 	std::string output_file = (OUTPUT_FOLDER + (std::string)"/" + JAD_OUTPUT_FOLDER + (std::string)"/" + OUTPUT_FILENAME + getTimeOfRun() + OUTPUT_FILEFORMAT);
 
 	std::cout << "!!! OUTPUT IS BEING WRITTEN TO " << output_file << " !!!" << std::endl;

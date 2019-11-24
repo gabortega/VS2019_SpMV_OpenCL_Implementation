@@ -6,7 +6,7 @@
 #include<string>
 #include<windows.h>
 
-#include<util_time.hpp>
+#include<util_misc.hpp>
 #include<CL/cl.h>
 #include<JC/util.hpp>
 #include<IO/mmio.h>
@@ -334,6 +334,8 @@ int main(void)
 
 	std::string input_filename = (INPUT_FOLDER + (std::string)"/" + INPUT_FILE);
 	
+	if (createOutputDirectory(OUTPUT_FOLDER, ELL_OUTPUT_FOLDER))
+		exit(1);
 	std::string output_file = (OUTPUT_FOLDER + (std::string)"/" + ELL_OUTPUT_FOLDER + (std::string)"/" + OUTPUT_FILENAME + getTimeOfRun() + OUTPUT_FILEFORMAT);
 
 	std::cout << "!!! OUTPUT IS BEING WRITTEN TO "<< output_file <<" !!!" << std::endl;
@@ -410,36 +412,6 @@ int main(void)
 			std::cout << y4[i] << " ";
 		std::cout << std::endl;
 	}
-#endif
-
-#if ELL + ELLG + HLL + HLL_LOCAL >= 2
-	long total = 0;
-	int dividor = ELL + ELLG + HLL + HLL_LOCAL;
-	bool correct_output = true;
-	for (IndexType i = 0; i < n; i++)
-	{
-#if ELL
-		total += y1[i] * ROUNDING_ERROR;
-#endif
-#if ELLG
-		total += y2[i] * ROUNDING_ERROR;
-#endif
-#if HLL
-		total += y3[i] * ROUNDING_ERROR;
-#endif
-#if HLL_LOCAL
-		total += y4[i] * ROUNDING_ERROR;
-#endif
-		if ((total / dividor * dividor) - total)
-		{
-			correct_output = false;
-			i = n;
-		}
-		total = 0;
-	}
-
-	if (correct_output) std::cout << std::endl << "-- OUTPUT FOR ALL KERNELS ARE THE SAME (DOUBLE PRECISION MAY CONTAIN SLIGHT APPROXIMATION ERRORS) --" << std::endl << std::endl;
-	else std::cout << std::endl << "-- OUTPUT FOR ALL KERNELS ARE NOT THE SAME (DOUBLE PRECISION MAY CONTAIN SLIGHT APPROXIMATION ERRORS) --" << std::endl << std::endl;
 #endif
 
 	x.clear();

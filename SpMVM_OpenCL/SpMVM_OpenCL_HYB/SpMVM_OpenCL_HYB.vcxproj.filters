@@ -27,7 +27,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SpMVM_OpenCL_CSR.cpp">
+    <ClCompile Include="SpMVM_OpenCL_HYB.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\include\IO\mmio.c">
@@ -52,7 +52,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\kernels\CSR_kernel.cl">
+    <None Include="..\kernels\COO_kernel.cl">
+      <Filter>Source Files\kernel</Filter>
+    </None>
+    <None Include="..\kernels\ELL_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
   </ItemGroup>

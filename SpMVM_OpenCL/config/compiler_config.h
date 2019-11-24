@@ -7,7 +7,7 @@
 // This setting sets the precision of the floating point calculations:
 // 1 = single-precision
 // 2 = double-precision
-#define PRECISION 1
+#define PRECISION 2
 // for comparing output
 #define ROUNDING_ERROR 1000
 //
@@ -112,7 +112,7 @@
 //            Input/Output related
 //
 #define INPUT_FOLDER "../input"
-#define INPUT_FILE "5pt_10x10.mtx"
+#define INPUT_FILE "psmigr_1.mtx"
 //
 #define OUTPUT_FOLDER "../output"
 //
@@ -136,10 +136,8 @@
 #define HLL_LOG 0
 #define DIA_LOG 0
 #define HDIA_LOG 0
-#define HYB_ELL_LOG 0
 #define HYB_ELLG_LOG 0
 #define HYB_HLL_LOG 0
-#define HYB_HLL_LOCAL_LOG 0
 //
 // Print out output data for each kernel
 #define COO_OUTPUT_LOG 1
