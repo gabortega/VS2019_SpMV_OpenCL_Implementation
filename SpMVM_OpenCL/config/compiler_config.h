@@ -39,7 +39,7 @@
 //! @param BREAKEVEN_THRESHOLD  Minimum threshold at which ELL is faster than COO
 ////////////////////////////////////////////////////////////////////////////////
 #define RELATIVE_SPEED 3.0 // default is 3.0
-#define BREAKEVEN_THRESHOLD 4096 // default is 4096
+#define BREAKEVEN_THRESHOLD 16 // default is 4096
 //
 // Size of 'hacks' for hacked formats 
 // should be multiple of WARP_SIZE

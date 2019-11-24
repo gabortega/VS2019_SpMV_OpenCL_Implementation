@@ -60,13 +60,20 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 	//
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
+	// ell related
+	size_t byte_size_d_jcoeff;
+	size_t byte_size_d_a;
+	//
+	cl::Buffer d_jcoeff_buffer;
+	cl::Buffer d_a_buffer;
+	//
 	if (d_hyb->ellg.nnz > 0)
 	{
-		size_t byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
-		size_t byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
+		byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
+		byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
 		//
-		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		d_jcoeff_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		d_a_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
 		//
 		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
 		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->ellg.a);
@@ -285,15 +292,24 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 	//
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
+	// ellg related
+	size_t byte_size_d_nell;
+	size_t byte_size_d_jcoeff;
+	size_t byte_size_d_a;
+	//
+	cl::Buffer d_nell_buffer;
+	cl::Buffer d_jcoeff_buffer;
+	cl::Buffer d_a_buffer;
+	//
 	if (d_hyb->ellg.nnz > 0)
 	{
-		size_t byte_size_d_nell = (d_hyb->ellg.n + 1) * sizeof(cl_uint);
-		size_t byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
-		size_t byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
+		byte_size_d_nell = (d_hyb->ellg.n + 1) * sizeof(cl_uint);
+		byte_size_d_jcoeff = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(cl_uint);
+		byte_size_d_a = d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n) * sizeof(CL_REAL);
 		//
-		cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
-		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		d_nell_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
+		d_jcoeff_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		d_a_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
 		//
 		queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->ellg.nell);
 		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
@@ -513,17 +529,28 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 	//
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
+	// hll related
+	size_t byte_size_d_nell;
+	size_t byte_size_d_jcoeff;
+	size_t byte_size_d_hoff;
+	size_t byte_size_d_a;
+	//
+	cl::Buffer d_nell_buffer;
+	cl::Buffer d_jcoeff_buffer;
+	cl::Buffer d_hoff_buffer;
+	cl::Buffer d_a_buffer;
+	//
 	if (d_hyb->hll.nnz > 0)
 	{
-		size_t byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
-		size_t byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
-		size_t byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
-		size_t byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
+		byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
+		byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
+		byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
+		byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
 		//
-		cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
-		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-		cl::Buffer d_hoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
-		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		d_nell_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
+		d_jcoeff_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		d_hoff_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
+		d_a_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
 		//
 		queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->hll.nell);
 		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->hll.jcoeff);
@@ -746,17 +773,28 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 	//
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
+	// hll_local related
+	size_t byte_size_d_nell;
+	size_t byte_size_d_jcoeff;
+	size_t byte_size_d_hoff;
+	size_t byte_size_d_a;
+	//
+	cl::Buffer d_nell_buffer;
+	cl::Buffer d_jcoeff_buffer;
+	cl::Buffer d_hoff_buffer;
+	cl::Buffer d_a_buffer;
+	//
 	if (d_hyb->hll.nnz > 0)
 	{
-		size_t byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
-		size_t byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
-		size_t byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
-		size_t byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
+		byte_size_d_nell = d_hyb->hll.nhoff * sizeof(cl_uint);
+		byte_size_d_jcoeff = d_hyb->hll.total_mem * sizeof(cl_uint);
+		byte_size_d_hoff = d_hyb->hll.nhoff * sizeof(cl_uint);
+		byte_size_d_a = d_hyb->hll.total_mem * sizeof(CL_REAL);
 		//
-		cl::Buffer d_nell_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
-		cl::Buffer d_jcoeff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
-		cl::Buffer d_hoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
-		cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
+		d_nell_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_nell };
+		d_jcoeff_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_jcoeff };
+		d_hoff_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
+		d_a_buffer = cl::Buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
 		//
 		queue.enqueueWriteBuffer(d_nell_buffer, CL_TRUE, 0, byte_size_d_nell, d_hyb->hll.nell);
 		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->hll.jcoeff);
