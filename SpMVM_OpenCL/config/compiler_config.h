@@ -21,32 +21,18 @@
 // same but for HLL
 #define MAX_HLL 10000 // default is 10000
 //
-// HYB format
-// taken from sc2009_spmv and altered
-// URL: https://code.google.com/archive/p/cusp-library/downloads
-//
-////////////////////////////////////////////////////////////////////////////////
-//! Compute Optimal Number of Columns per Row in the ELL part of the HYB format
-//! Examines the distribution of nonzeros per row of the input CSR matrix to find
-//! the optimal tradeoff between the ELL and COO portions of the hybrid (HYB)
-//! sparse matrix format under the assumption that ELL performance is a fixed
-//! multiple of COO performance.  Furthermore, since ELL performance is also
-//! sensitive to the absolute number of rows (and COO is not), a threshold is
-//! used to ensure that the ELL portion contains enough rows to be worthwhile.
-//! The default values were chosen empirically for a GTX280.
-//!
-//! @param RELATIVE_SPEED       Speed of ELL relative to COO (e.g. 2.0 -> ELL is twice as fast)
-//! @param BREAKEVEN_THRESHOLD  Minimum threshold at which ELL is faster than COO
-////////////////////////////////////////////////////////////////////////////////
-#define RELATIVE_SPEED 3.0 // default is 3.0
-#define BREAKEVEN_THRESHOLD 16 // default is 4096
-//
 // Size of 'hacks' for hacked formats 
 // should be multiple of WARP_SIZE
 // HLL format
 #define HLL_HACKSIZE 32 // default is 32
 // HDIA format
 #define HDIA_HACKSIZE 32 // default is 32
+//
+// ELL-CSR HYB format
+// based on: "Accelerating Sparse Matrix Vector Multiplication in Iterative Methods Using GPU"
+// by: Kiran Kumar Matam & Kishore Kothapalli
+//
+#define ELL_ROW_MAX 256 // default is 256; should be a multiple of 32
 //
 /*--------------------------------------------------*/
 
@@ -55,7 +41,6 @@
 //
 #define KERNEL_FOLDER "../kernels"
 //
-#define COO_KERNEL_FILE "COO_kernel.cl"
 #define CSR_KERNEL_FILE "CSR_kernel.cl"
 #define JAD_KERNEL_FILE "JAD_kernel.cl"
 #define ELL_KERNEL_FILE "ELL_kernel.cl"
@@ -92,7 +77,6 @@
 #define CSR_WORKGROUP_SIZE 128 // default is 128
 //
 // Kernels to run (0: Off; 1: On)
-#define COO 1
 #define CSR 1
 #define JAD 1
 #define ELL 1
@@ -112,13 +96,12 @@
 //            Input/Output related
 //
 #define INPUT_FOLDER "../input"
-#define INPUT_FILE "dynamicSoaringProblem_1.mtx"
+#define INPUT_FILE "psmigr_1.mtx"
 //
 #define OUTPUT_FOLDER "../output"
 //
 // Storage format-specific output folders
 //
-#define COO_OUTPUT_FOLDER "COO"
 #define CSR_OUTPUT_FOLDER "CSR"
 #define JAD_OUTPUT_FOLDER "JAD"
 #define ELL_OUTPUT_FOLDER "ELL"
@@ -140,7 +123,6 @@
 #define HYB_HLL_LOG 0
 //
 // Print out output data for each kernel
-#define COO_OUTPUT_LOG 1
 #define CSR_OUTPUT_LOG 1
 #define JAD_OUTPUT_LOG 1
 #define ELL_OUTPUT_LOG 1

@@ -52,10 +52,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\kernels\COO_kernel.cl">
+    <None Include="..\kernels\ELL_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
-    <None Include="..\kernels\ELL_kernel.cl">
+    <None Include="..\kernels\CSR_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
   </ItemGroup>

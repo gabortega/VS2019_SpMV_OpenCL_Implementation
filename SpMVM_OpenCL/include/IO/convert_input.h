@@ -100,7 +100,7 @@ struct hdia_t {
 struct hybellg_t {
 	IndexType n;
 	IndexType nnz;
-	struct coo_t coo;
+	struct csr_t csr;
 	struct ellg_t ellg;
 };
 
@@ -108,7 +108,7 @@ struct hybellg_t {
 struct hybhll_t {
 	IndexType n;
 	IndexType nnz;
-	struct coo_t coo;
+	struct csr_t csr;
 	struct hll_t hll;
 };
 
@@ -116,15 +116,12 @@ void MM_To_COO(const char* filename, struct coo_t* coo, int log);
 void COO_To_CSR(struct coo_t* coo, struct csr_t* csr, int log);
 void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log);
 int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log);
-int CSR_To_ELLG_K(struct csr_t* csr, struct ellg_t* ellg, IndexType maxell, int log);
 int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log);
-int CSR_To_HLL_K(struct csr_t* csr, struct hll_t* hll, IndexType maxell, int log);
 int CSR_To_DIA(struct csr_t* csr, struct dia_t* dia, int log);
 int CSR_To_HDIA(struct csr_t* csr, struct hdia_t* hdia, int log);
-void COO_To_HYBELLG(struct coo_t* coo, struct hybellg_t* hyb, int log);
-void COO_To_HYBHLL(struct coo_t* coo, struct hybhll_t* hyb, int log);
+void CSR_To_HYBELLG(struct csr_t* coo, struct hybellg_t* hyb, int log);
+void CSR_To_HYBHLL(struct csr_t* coo, struct hybhll_t* hyb, int log);
 
-int compute_hyb_cols_per_row(struct csr_t* csr);
 void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, IndexType ilo, IndexType ihi);
 void PadJADWARP(struct jad_t* jadg);
 void infdia(IndexType n, IndexType* ja, IndexType* ia, IndexType* ind, IndexType idiag);

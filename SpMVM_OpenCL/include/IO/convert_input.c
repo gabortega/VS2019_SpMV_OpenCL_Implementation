@@ -327,31 +327,26 @@ void PadJADWARP(struct jad_t* jad)
 	free(oldja);
 }
 
-int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log)
-{
-	return CSR_To_ELLG_K(csr, ellg, MAX_ELLG, log);
-}
-
 /*---------------------------------------------------------------*/
 // Same as ELL but length of each row is saved during construction
-int CSR_To_ELLG_K(struct csr_t* csr, struct ellg_t* ellg, IndexType max_ellg, int log)
+int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log)
 {
 	// Allocate ELLG
 	IndexType n = ellg->n = csr->n, lenmax = 0, nnz = 0;
 	/*------------ pad each diag to be multiple of the WARP_SIZE */
 	ellg->stride = (n + WARP_SIZE - 1) / WARP_SIZE * WARP_SIZE;
 	ellg->nell = (IndexType*)malloc((n + 1) * sizeof(IndexType));
-	ellg->jcoeff = (IndexType*)malloc(max_ellg * ellg->stride * sizeof(IndexType));
-	ellg->a = (REAL*)malloc(max_ellg * ellg->stride * sizeof(REAL));
+	ellg->jcoeff = (IndexType*)malloc(MAX_ELLG * ellg->stride * sizeof(IndexType));
+	ellg->a = (REAL*)malloc(MAX_ELLG * ellg->stride * sizeof(REAL));
 	// CSR -> ELLG (based off ELL code)
 	IndexType j, k, len, k1, i, jj;
 	//
-	for (j = 0; j < max_ellg; j++)
+	for (j = 0; j < MAX_ELLG; j++)
 	{
 		for (i = 0; i < ellg->stride; i++)
 		{
-			*(ellg->a + (i * max_ellg) + j) = 0.0f;
-			*(ellg->jcoeff + (i * max_ellg) + j) = 1;
+			*(ellg->a + (i * MAX_ELLG) + j) = 0.0f;
+			*(ellg->jcoeff + (i * MAX_ELLG) + j) = 1;
 		}
 	}
 	//
@@ -362,7 +357,7 @@ int CSR_To_ELLG_K(struct csr_t* csr, struct ellg_t* ellg, IndexType max_ellg, in
 	for (j = 0; j < ellg->n; j++)
 	{
 		lenmax = max(*(csr->ia + j + 1) - *(csr->ia + j), lenmax);
-		*(ellg->nell + j) = min(*(csr->ia + j + 1) - *(csr->ia + j), max_ellg);
+		*(ellg->nell + j) = min(*(csr->ia + j + 1) - *(csr->ia + j), MAX_ELLG);
 		*(ellg->nell + n) = max(*(ellg->nell + n), *(ellg->nell + j));
 	}
 	//
@@ -406,7 +401,7 @@ int CSR_To_ELLG_K(struct csr_t* csr, struct ellg_t* ellg, IndexType max_ellg, in
 	}
 
 	/*-------------------------------*/
-	if (lenmax <= max_ellg)
+	if (lenmax <= MAX_ELLG)
 	{
 		return 1;
 	}
@@ -414,13 +409,8 @@ int CSR_To_ELLG_K(struct csr_t* csr, struct ellg_t* ellg, IndexType max_ellg, in
 	return 0;
 }
 
-int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log)
-{
-	return CSR_To_HLL_K(csr, hll, MAX_HLL, log);
-}
-
 /*-------------------------------------------------*/
-int CSR_To_HLL_K(struct csr_t* csr, struct hll_t* hll, IndexType max_hll, int log)
+int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log)
 {
 	// Allocate HLL
 	IndexType n = hll->n = csr->n, lenmax = 0, nnz = 0;
@@ -428,18 +418,18 @@ int CSR_To_HLL_K(struct csr_t* csr, struct hll_t* hll, IndexType max_hll, int lo
 	/*------------ pad each diag to be multiple of the WARP_SIZE */
 	hll->nell = (IndexType*)malloc(hoff_size * sizeof(IndexType));
 	hll->stride = (n + WARP_SIZE - 1) / WARP_SIZE * WARP_SIZE;
-	hll->jcoeff = (IndexType*)malloc(max_hll * hll->stride * sizeof(IndexType));
+	hll->jcoeff = (IndexType*)malloc(MAX_HLL * hll->stride * sizeof(IndexType));
 	hll->hoff = (IndexType*)malloc(hoff_size * sizeof(unsigned IndexType));
-	hll->a = (REAL*)malloc(max_hll * hll->stride * sizeof(REAL));
+	hll->a = (REAL*)malloc(MAX_HLL * hll->stride * sizeof(REAL));
 	// CSR -> HLL (based off ELL code)
 	IndexType j, k, len, k1, i, jj, hack, lowerb, higherb;
 	//
-	for (j = 0; j < max_hll; j++)
+	for (j = 0; j < MAX_HLL; j++)
 	{
 		for (i = 0; i < hll->stride; i++)
 		{
-			*(hll->a + (i * max_hll) + j) = 0.0f;
-			*(hll->jcoeff + (i * max_hll) + j) = 1;
+			*(hll->a + (i * MAX_HLL) + j) = 0.0f;
+			*(hll->jcoeff + (i * MAX_HLL) + j) = 1;
 		}
 	}
 	//
@@ -457,14 +447,14 @@ int CSR_To_HLL_K(struct csr_t* csr, struct hll_t* hll, IndexType max_hll, int lo
 		for (j = lowerb; j < higherb; j++)
 		{
 			lenmax = max(*(csr->ia + j + 1) - *(csr->ia + j), lenmax);
-			*(hll->nell + hack) = max(min(*(csr->ia + j + 1) - *(csr->ia + j), max_hll), *(hll->nell + hack));
+			*(hll->nell + hack) = max(min(*(csr->ia + j + 1) - *(csr->ia + j), MAX_HLL), *(hll->nell + hack));
 			*(hll->nell + hoff_size - 1) = max(*(hll->nell + hoff_size - 1), *(hll->nell + hack));
 		}
 		//
 		for (jj = lowerb; jj < higherb; jj++)
 		{
 			k1 = *(hll->hoff + hack) - 1 + jj - lowerb;
-			len = min(*(csr->ia + jj + 1) - *(csr->ia + jj), max_hll);
+			len = min(*(csr->ia + jj + 1) - *(csr->ia + jj), MAX_HLL);
 			for (k = 0; k < len; k++)
 			{
 				i = *(csr->ia + jj) + k - 1;
@@ -511,7 +501,7 @@ int CSR_To_HLL_K(struct csr_t* csr, struct hll_t* hll, IndexType max_hll, int lo
 	}
 
 	/*-------------------------------*/
-	if (lenmax <= max_hll)
+	if (lenmax <= MAX_HLL)
 	{
 		return 1;
 	}
@@ -798,143 +788,173 @@ void hinfdia(IndexType lowerb, IndexType higherb, IndexType n, IndexType* ja, In
 }
 
 /*--------------------------------------------------*/
-void COO_To_HYBELLG(struct coo_t* coo, struct hybellg_t* hyb, int log)
+void CSR_To_HYBELLG(struct csr_t* csr, struct hybellg_t* hyb, int log)
 {
-	struct csr_t csr;
-	IndexType n = hyb->n = coo->n;
-	IndexType nnz = hyb->nnz = coo->nnz;
-	fprintf(stdout, "HYB(ELL-G): Original Matrix N = %d, NNZ = %d\n", n, nnz);
-	COO_To_CSR(coo, &csr, 0);
-	IndexType k = compute_hyb_cols_per_row(&csr), i, j, index;
-	fprintf(stdout, "ELL-G part has %d columns\n\n", k);
-	CSR_To_ELLG_K(&csr, &hyb->ellg, k, log);
-	FreeCSR(&csr);
-	IndexType* nnz_offset_per_row = (IndexType*)malloc(n * sizeof(IndexType));
+	struct csr_t temp_csr; // used to generate ELL-G
+	IndexType n = hyb->n = csr->n;
+	IndexType nnz = hyb->nnz = csr->nnz, temp_nnz = 0, k, csr_nnz = 0, offset = 0;
+	IndexType i, j, index, avg_nnz_len_per_row = 0;
+	IndexType* nnz_len_per_row = (IndexType*)malloc(n * sizeof(IndexType));
 	for (i = 0; i < n; i++)
-		*(nnz_offset_per_row + i) = k;
-	/*-------- Allocate mem for COO */
-	hyb->coo.n = n;
-	hyb->coo.nnz = (nnz - hyb->ellg.nnz);
-	hyb->coo.ir = (IndexType*)malloc((nnz - hyb->ellg.nnz) * sizeof(IndexType));
-	hyb->coo.jc = (IndexType*)malloc((nnz - hyb->ellg.nnz) * sizeof(IndexType));
-	hyb->coo.val = (REAL*)malloc((nnz - hyb->ellg.nnz) * sizeof(REAL));
-	/*-------- Find and asign remaining elements */
-	for (i = 0, j = 0; i < nnz; i++)
 	{
-		index = *(coo->ir + i) - 1;
-		if (*(nnz_offset_per_row + index) == 0)
+		*(nnz_len_per_row + i) = *(csr->ia + i + 1) - *(csr->ia + i);
+		avg_nnz_len_per_row++;
+	}
+	avg_nnz_len_per_row /= n;
+	for (k = 1; avg_nnz_len_per_row >= k && k <= ELL_ROW_MAX; k <<= 1);
+
+	/*-------- Allocate mem for temp CSR */
+	temp_csr.n = n;
+	temp_csr.ia = (IndexType*)malloc((n + 1) * sizeof(IndexType));
+	temp_csr.ja = (IndexType*)malloc(nnz * sizeof(IndexType));
+	temp_csr.a = (REAL*)malloc(nnz * sizeof(REAL));
+	/*-------- Allocate mem for new CSR */
+	hyb->csr.n = n;
+	hyb->csr.ia = (IndexType*)malloc((n + 1) * sizeof(IndexType));
+	hyb->csr.ja = (IndexType*)malloc(nnz * sizeof(IndexType));
+	hyb->csr.a = (REAL*)malloc(nnz * sizeof(REAL));
+	/*-------- Find and assign corresponding elements with the new threshold */
+	*(temp_csr.ia + 0) = 1;
+	*(hyb->csr.ia + 0) = 1;
+	for (i = 0; i < n; i++)
+	{
+		*(temp_csr.ia + i + 1) = *(temp_csr.ia + i);
+		*(hyb->csr.ia + i + 1) = *(hyb->csr.ia + i);
+		if (*(nnz_len_per_row + i) <= k)
 		{
-			*(hyb->coo.ir + j) = *(coo->ir + i);
-			*(hyb->coo.jc + j) = *(coo->jc + i);
-			*(hyb->coo.val + j) = *(coo->val + i);
-			j++;
+			for (j = 0; j < *(nnz_len_per_row + i); j++)
+			{
+				*(temp_csr.ja + temp_nnz) = *(csr->ja + offset);
+				*(temp_csr.a + temp_nnz) = *(csr->a + offset);
+				*(temp_csr.ia + i + 1) += 1;
+				temp_nnz++;
+				offset += 1;
+			}
 		}
 		else
-			*(nnz_offset_per_row + index) = *(nnz_offset_per_row + index) - 1;
+		{
+			for (j = 0; j < *(nnz_len_per_row + i); j++)
+			{
+				*(hyb->csr.ja + csr_nnz) = *(csr->ja + offset);
+				*(hyb->csr.a + csr_nnz) = *(csr->a + offset);
+				*(hyb->csr.ia + i + 1) += 1;
+				csr_nnz++;
+				offset += 1;
+			}
+		}
 	}
+	/*-------- Complete temp CSR */
+	temp_csr.nnz = temp_nnz;
+	temp_csr.ja = (IndexType*)realloc(temp_csr.ja, temp_nnz * sizeof(IndexType));
+	temp_csr.a = (REAL*)realloc(temp_csr.a, temp_nnz * sizeof(REAL));
+	/*-------- Complete new CSR */
+	hyb->csr.nnz = csr_nnz;
+	hyb->csr.ja = (IndexType*)realloc(hyb->csr.ja, csr_nnz * sizeof(IndexType));
+	hyb->csr.a = (REAL*)realloc(hyb->csr.a, csr_nnz * sizeof(REAL));
 
-	fprintf(stdout, "\nCOO: Matrix N = %d, NNZ = %d\n", n, hyb->coo.nnz);
+	fprintf(stdout, "HYB(ELL-G): Original Matrix N = %d, NNZ = %d, AVG NNZ/ROW = %d\n", n, nnz, avg_nnz_len_per_row);
+	fprintf(stdout, "            ELL-G part: NNZ = %d            CSR part: NNZ = %d\n", temp_nnz, csr_nnz);
+	CSR_To_ELLG(&temp_csr, &hyb->ellg, log);
+
+	FreeCSR(&temp_csr);
+
 	if (log)
 	{
-		for (IndexType i = 0; i < hyb->coo.nnz; i++)
-			fprintf(stdout, "%d %d %20.19g\n", hyb->coo.ir[i], hyb->coo.jc[i], hyb->coo.val[i]);
+		fprintf(stdout, "CSR: Matrix N = %d, NNZ = %d\n", hyb->csr.n, hyb->csr.nnz);
+		fprintf(stdout, "hyb->csr.ja | hyb->csr.a\n");
+		for (i = 0; i < hyb->csr.nnz; i++)
+			fprintf(stdout, "%d %20.19g\n", hyb->csr.ja[i], hyb->csr.a[i]);
+		fprintf(stdout, "\n");
+		fprintf(stdout, "hyb->csr.ia: \n");
+		for (i = 0; i < hyb->csr.n + 1; i++)
+			fprintf(stdout, "%d ", hyb->csr.ia[i]);
+		fprintf(stdout, "\n");
 	}
-	fprintf(stdout, "\n");
 }
 
 /*--------------------------------------------------*/
-void COO_To_HYBHLL(struct coo_t* coo, struct hybhll_t* hyb, int log)
+void CSR_To_HYBHLL(struct csr_t* csr, struct hybhll_t* hyb, int log)
 {
-	struct csr_t csr;
-	IndexType n = hyb->n = coo->n;
-	IndexType nnz = hyb->nnz = coo->nnz;
-	fprintf(stdout, "HYB(HLL): Original Matrix N = %d, NNZ = %d\n", n, nnz);
-	COO_To_CSR(coo, &csr, 0);
-	IndexType k = compute_hyb_cols_per_row(&csr), i, j, index;
-	fprintf(stdout, "HLL part has %d columns\n\n", k);
-	CSR_To_HLL_K(&csr, &hyb->hll, k, log);
-	FreeCSR(&csr);
-	IndexType* nnz_offset_per_row = (IndexType*)malloc(n * sizeof(IndexType));
+	struct csr_t temp_csr; // used to generate ELL-G
+	IndexType n = hyb->n = csr->n;
+	IndexType nnz = hyb->nnz = csr->nnz, temp_nnz = 0, k, csr_nnz = 0, offset = 0;
+	IndexType i, j, index, avg_nnz_len_per_row = 0;
+	IndexType* nnz_len_per_row = (IndexType*)malloc(n * sizeof(IndexType));
 	for (i = 0; i < n; i++)
-		*(nnz_offset_per_row + i) = k;
-	/*-------- Allocate mem for COO */
-	hyb->coo.n = n;
-	hyb->coo.nnz = (nnz - hyb->hll.nnz);
-	hyb->coo.ir = (IndexType*)malloc((nnz - hyb->hll.nnz) * sizeof(IndexType));
-	hyb->coo.jc = (IndexType*)malloc((nnz - hyb->hll.nnz) * sizeof(IndexType));
-	hyb->coo.val = (REAL*)malloc((nnz - hyb->hll.nnz) * sizeof(REAL));
-	/*-------- Find and asign remaining elements */
-	for (i = 0, j = 0; i < nnz; i++)
 	{
-		index = *(coo->ir + i) - 1;
-		if (*(nnz_offset_per_row + index) == 0)
+		*(nnz_len_per_row + i) = *(csr->ia + i + 1) - *(csr->ia + i);
+		avg_nnz_len_per_row++;
+	}
+	avg_nnz_len_per_row /= n;
+	for (k = 1; avg_nnz_len_per_row >= k && k <= ELL_ROW_MAX; k <<= 1);
+
+	/*-------- Allocate mem for temp CSR */
+	temp_csr.n = n;
+	temp_csr.ia = (IndexType*)malloc((n + 1) * sizeof(IndexType));
+	temp_csr.ja = (IndexType*)malloc(nnz * sizeof(IndexType));
+	temp_csr.a = (REAL*)malloc(nnz * sizeof(REAL));
+	/*-------- Allocate mem for new CSR */
+	hyb->csr.n = n;
+	hyb->csr.ia = (IndexType*)malloc((n + 1) * sizeof(IndexType));
+	hyb->csr.ja = (IndexType*)malloc(nnz * sizeof(IndexType));
+	hyb->csr.a = (REAL*)malloc(nnz * sizeof(REAL));
+	/*-------- Find and assign corresponding elements with the new threshold */
+	*(temp_csr.ia + 0) = 1;
+	*(hyb->csr.ia + 0) = 1;
+	for (i = 0; i < n; i++)
+	{
+		*(temp_csr.ia + i + 1) = *(temp_csr.ia + i);
+		*(hyb->csr.ia + i + 1) = *(hyb->csr.ia + i);
+		if (*(nnz_len_per_row + i) <= k)
 		{
-			*(hyb->coo.ir + j) = *(coo->ir + i);
-			*(hyb->coo.jc + j) = *(coo->jc + i);
-			*(hyb->coo.val + j) = *(coo->val + i);
-			j++;
+			for (j = 0; j < *(nnz_len_per_row + i); j++)
+			{
+				*(temp_csr.ja + temp_nnz) = *(csr->ja + offset);
+				*(temp_csr.a + temp_nnz) = *(csr->a + offset);
+				*(temp_csr.ia + i + 1) += 1;
+				temp_nnz++;
+				offset += 1;
+			}
 		}
 		else
-			*(nnz_offset_per_row + index) = *(nnz_offset_per_row + index) - 1;
-	}
-
-	fprintf(stdout, "\nCOO: Matrix N = %d, NNZ = %d\n", n, hyb->coo.nnz);
-	if (log)
-	{
-		for (IndexType i = 0; i < hyb->coo.nnz; i++)
-			fprintf(stdout, "%d %d %20.19g\n", hyb->coo.ir[i], hyb->coo.jc[i], hyb->coo.val[i]);
-	}
-	fprintf(stdout, "\n");
-}
-
-// taken from sc2009_spmv (by: Nathan Bell & Michael Garland) and altered
-// URL: https://code.google.com/archive/p/cusp-library/downloads
-
-////////////////////////////////////////////////////////////////////////////////
-//! Compute Optimal Number of Columns per Row in the ELL part of the HYB format
-//! Examines the distribution of nonzeros per row of the input CSR matrix to find
-//! the optimal tradeoff between the ELL and COO portions of the hybrid (HYB)
-//! sparse matrix format under the assumption that ELL performance is a fixed
-//! multiple of COO performance.  Furthermore, since ELL performance is also
-//! sensitive to the absolute number of rows (and COO is not), a threshold is
-//! used to ensure that the ELL portion contains enough rows to be worthwhile.
-//! The default values were chosen empirically for a GTX280.
-//!
-//! @param csr                  CSR matrix
-//! @param RELATIVE_SPEED       Speed of ELL relative to COO (e.g. 2.0 -> ELL is twice as fast)
-//! @param BREAKEVEN_THRESHOLD  Minimum threshold at which ELL is faster than COO
-////////////////////////////////////////////////////////////////////////////////
-
-// relative speed of 3.0 for full ELL vs. COO (full = no padding)
-
-IndexType compute_hyb_cols_per_row(struct csr_t* csr)
-{
-	// compute maximum row length
-	IndexType max_cols_per_row = 0;
-	for (IndexType i = 0; i < csr->n; i++)
-		max_cols_per_row = max(max_cols_per_row, csr->ia[i + 1] - csr->ia[i]);
-
-	// compute distribution of nnz per row
-	IndexType* histogram = (IndexType*)malloc((max_cols_per_row + 1) * sizeof(IndexType));
-	for (IndexType i = 0; i < (max_cols_per_row + 1); i++)
-		histogram[i] = 0;
-	for (IndexType i = 0; i < csr->n; i++)
-		histogram[csr->ia[i + 1] - csr->ia[i]]++;
-
-	// compute optimal ELL column size 
-	IndexType num_cols_per_row = max_cols_per_row;
-	for (IndexType i = 0, rows = csr->n; i < max_cols_per_row; i++)
-	{
-		rows -= histogram[i];  //number of rows of length > i
-		if (RELATIVE_SPEED * rows < csr->n || rows < BREAKEVEN_THRESHOLD)
 		{
-			num_cols_per_row = i;
-			break;
+			for (j = 0; j < *(nnz_len_per_row + i); j++)
+			{
+				*(hyb->csr.ja + csr_nnz) = *(csr->ja + offset);
+				*(hyb->csr.a + csr_nnz) = *(csr->a + offset);
+				*(hyb->csr.ia + i + 1) += 1;
+				csr_nnz++;
+				offset += 1;
+			}
 		}
 	}
-	free(histogram);
+	/*-------- Complete temp CSR */
+	temp_csr.nnz = temp_nnz;
+	temp_csr.ja = (IndexType*)realloc(temp_csr.ja, temp_nnz * sizeof(IndexType));
+	temp_csr.a = (REAL*)realloc(temp_csr.a, temp_nnz * sizeof(REAL));
+	/*-------- Complete new CSR */
+	hyb->csr.nnz = csr_nnz;
+	hyb->csr.ja = (IndexType*)realloc(hyb->csr.ja, csr_nnz * sizeof(IndexType));
+	hyb->csr.a = (REAL*)realloc(hyb->csr.a, csr_nnz * sizeof(REAL));
 
-	return num_cols_per_row;
+	fprintf(stdout, "HYB(HLL): Original Matrix N = %d, NNZ = %d, AVG NNZ/ROW = %d\n", n, nnz, avg_nnz_len_per_row);
+	fprintf(stdout, "          HLL part: NNZ = %d              CSR part: NNZ = %d\n", temp_nnz, csr_nnz);
+	CSR_To_HLL(&temp_csr, &hyb->hll, log);
+
+	FreeCSR(&temp_csr);
+
+	if (log)
+	{
+		fprintf(stdout, "CSR: Matrix N = %d, NNZ = %d\n", hyb->csr.n, hyb->csr.nnz);
+		fprintf(stdout, "hyb->csr.ja | hyb->csr.a\n");
+		for (i = 0; i < hyb->csr.nnz; i++)
+			fprintf(stdout, "%d %20.19g\n", hyb->csr.ja[i], hyb->csr.a[i]);
+		fprintf(stdout, "\n");
+		fprintf(stdout, "hyb->csr.ia: \n");
+		for (i = 0; i < hyb->csr.n + 1; i++)
+			fprintf(stdout, "%d ", hyb->csr.ia[i]);
+		fprintf(stdout, "\n");
+	}
 }
 
 /*---------------------------*/
@@ -1000,12 +1020,12 @@ void FreeHDIA(struct hdia_t* hdia)
 void FreeHYBELLG(struct hybellg_t* hyb)
 {
 	FreeELLG(&hyb->ellg);
-	FreeCOO(&hyb->coo);
+	FreeCSR(&hyb->csr);
 }
 
 /*---------------------------*/
 void FreeHYBHLL(struct hybhll_t* hyb)
 {
 	FreeHLL(&hyb->hll);
-	FreeCOO(&hyb->coo);
+	FreeCSR(&hyb->csr);
 }
