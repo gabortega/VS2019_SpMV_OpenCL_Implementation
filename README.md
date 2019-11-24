@@ -24,4 +24,4 @@ Now, whenever you press either CTRL+F5 (Release mode) or F5 (Debug mode), VS wil
 
 The implementations are entirely configurable via the "compiler_config.h" located at ...\VS2019_SpMV_OpenCL_Implementation\SpMVM_OpenCL\config
 
-NB: HYB and COO implementations do not work properly... yet.
+NB: <del> HYB and COO implementations do not work properly... yet. </del> HYB is being replaced with a ELL-CSR combo instead of ELL-COO.
