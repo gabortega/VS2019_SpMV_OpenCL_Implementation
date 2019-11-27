@@ -798,7 +798,7 @@ void CSR_To_HYBELLG(struct csr_t* csr, struct hybellg_t* hyb, int log)
 	for (i = 0; i < n; i++)
 	{
 		*(nnz_len_per_row + i) = *(csr->ia + i + 1) - *(csr->ia + i);
-		avg_nnz_len_per_row++;
+		avg_nnz_len_per_row += *(csr->ia + i + 1) - *(csr->ia + i);
 	}
 	avg_nnz_len_per_row /= n;
 	for (k = 1; avg_nnz_len_per_row >= k && k <= ELL_ROW_MAX; k <<= 1);
@@ -883,7 +883,7 @@ void CSR_To_HYBHLL(struct csr_t* csr, struct hybhll_t* hyb, int log)
 	for (i = 0; i < n; i++)
 	{
 		*(nnz_len_per_row + i) = *(csr->ia + i + 1) - *(csr->ia + i);
-		avg_nnz_len_per_row++;
+		avg_nnz_len_per_row += *(csr->ia + i + 1) - *(csr->ia + i);
 	}
 	avg_nnz_len_per_row /= n;
 	for (k = 1; avg_nnz_len_per_row >= k && k <= ELL_ROW_MAX; k <<= 1);
