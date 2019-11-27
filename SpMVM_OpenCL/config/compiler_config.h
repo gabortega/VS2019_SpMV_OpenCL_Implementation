@@ -55,7 +55,7 @@
 #define HYB_HLL_KERNEL_FILE "HYB_kernel.cl"
 #define HYB_HLL_LOCAL_KERNEL_FILE "HYB_kernel.cl"
 //$
-#define MAX_THREADS 28*2048 // max consecutive threads for a GTX 1080
+#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048
 #define WARP_SIZE 32
 #define WORKGROUP_SIZE 256 // default is 256
 #define WARPS_PER_WORKGROUP (WORKGROUP_SIZE / WARP_SIZE)
