@@ -84,12 +84,12 @@ std::vector<CL_REAL> spmv_DIA(const struct dia_t* d_dia, const std::vector<CL_RE
 					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_dia->n, WORKGROUP_SIZE))),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_dia->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_dia->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 
 	return dst_y;
 }
@@ -157,12 +157,12 @@ std::vector<CL_REAL> spmv_HDIA(const struct hdia_t* d_hdia, const std::vector<CL
 				queue,
 				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hdia->n, WORKGROUP_SIZE))),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 
 	return dst_y;
 }
@@ -237,12 +237,12 @@ std::vector<CL_REAL> spmv_HDIA_LOCAL(const struct hdia_t* d_hdia, const std::vec
 				queue,
 				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hdia->n, WORKGROUP_SIZE))),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 
 	return dst_y;
 }

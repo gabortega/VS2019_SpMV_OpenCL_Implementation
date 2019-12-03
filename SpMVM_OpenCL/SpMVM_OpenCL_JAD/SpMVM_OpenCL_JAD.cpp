@@ -93,12 +93,12 @@ std::vector<CL_REAL> spmv_JAD(const struct jad_t* d_jad, const std::vector<CL_RE
 					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_jad->n, WORKGROUP_SIZE))),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r+1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r+1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_jad->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_jad->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 	//increment all values
 	for (IndexType i = 0; i < (d_jad->njad[d_jad->n] + 1); i++) d_jad->ia[i]++;
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]++;

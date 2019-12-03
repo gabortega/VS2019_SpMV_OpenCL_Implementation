@@ -163,12 +163,12 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
@@ -324,12 +324,12 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
     queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
     double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-    std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
@@ -492,12 +492,12 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
@@ -669,12 +669,12 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;

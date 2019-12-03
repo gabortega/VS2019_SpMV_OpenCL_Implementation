@@ -74,12 +74,12 @@ std::vector<CL_REAL> spmv_ELL(const struct ellg_t* d_ell, const std::vector<CL_R
 				queue,
 				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_ell->n, WORKGROUP_SIZE))),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_ell->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_ell->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 	//increment all values
 	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]++;
 
@@ -143,12 +143,12 @@ std::vector<CL_REAL> spmv_ELLG(const struct ellg_t* d_ellg, const std::vector<CL
                 queue,
 				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_ellg->n, WORKGROUP_SIZE))),
 				cl::NDRange(WORKGROUP_SIZE));
-        std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_ellg->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
         total_nanoseconds += nanoseconds;
     }
     queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
     double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-    std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_ellg->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 	//increment all values
 	for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]++;
 
@@ -216,12 +216,12 @@ std::vector<CL_REAL> spmv_HLL(const struct hll_t* d_hll, const std::vector<CL_RE
 				queue,
 				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hll->n, WORKGROUP_SIZE))),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hll->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hll->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 	//increment all values
 	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]++;
 	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]++;
@@ -297,12 +297,12 @@ std::vector<CL_REAL> spmv_HLL_LOCAL(const struct hll_t* d_hll, const std::vector
 				queue,
 				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hll->n, WORKGROUP_SIZE))),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hll->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hll->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 	//increment all values
 	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]++;
 	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]++;

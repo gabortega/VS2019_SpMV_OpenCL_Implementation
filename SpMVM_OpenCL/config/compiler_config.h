@@ -8,8 +8,6 @@
 // 1 = single-precision
 // 2 = double-precision
 #define PRECISION 2
-// for comparing output
-#define ROUNDING_ERROR 1000
 //
 // This setting is required in order to pre-allocate sufficient space
 // for the diag array of the DIA format.
@@ -68,9 +66,9 @@
 //
 // This setting tunes the memory used by each workgroup in the JAD kernel
 // Recommended to use a multiple of the WORKGROUSIZE
-#define MAX_NJAD_PER_WG 256 // default is 256
+#define MAX_NJAD_PER_WG 1024 // default is 256
 // same but for DIA
-#define MAX_NDIAG_PER_WG 256 // default is 256
+#define MAX_NDIAG_PER_WG 1024 // default is 256
 //
 //
 // CSR Parameters
