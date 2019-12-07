@@ -175,6 +175,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\kernels\DIA_kernel.cl" />
+    <None Include="..\kernels\HDIA_kernel.cl" />
+    <None Include="..\kernels\HDIA_LOCAL_kernel.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

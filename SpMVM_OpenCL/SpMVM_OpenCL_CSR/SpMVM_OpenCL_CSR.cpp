@@ -43,13 +43,15 @@ std::vector<CL_REAL> spmv_CSR(const struct csr_t* d_csr, const std::vector<CL_RE
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DCSR_REPEAT=" + std::to_string(repeat) +
+						" -DCSR_COOP=" + std::to_string(coop) +
+						" -DN_MATRIX=" + std::to_string(d_csr->n);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_csr_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_csr_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_csr" };
 	//
 	size_t byte_size_d_ia = (d_csr->n + 1) * sizeof(cl_uint);
 	size_t byte_size_d_ja = d_csr->nnz * sizeof(cl_uint);
@@ -73,15 +75,12 @@ std::vector<CL_REAL> spmv_CSR(const struct csr_t* d_csr, const std::vector<CL_RE
 	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_csr->a);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_csr->n);
-	kernel.setArg(1, repeat);
-	kernel.setArg(2, coop);
-	kernel.setArg(3, d_ia_buffer);
-	kernel.setArg(4, d_ja_buffer);
-	kernel.setArg(5, d_a_buffer);
-	kernel.setArg(6, d_x_buffer);
-	kernel.setArg(7, dst_y_buffer);
-	kernel.setArg(8, cl::Local(local_byte_size_shdata));
+	kernel.setArg(0, d_ia_buffer);
+	kernel.setArg(1, d_ja_buffer);
+	kernel.setArg(2, d_a_buffer);
+	kernel.setArg(3, d_x_buffer);
+	kernel.setArg(4, dst_y_buffer);
+	kernel.setArg(5, cl::Local(local_byte_size_shdata));
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;

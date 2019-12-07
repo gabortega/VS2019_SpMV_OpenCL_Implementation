@@ -175,7 +175,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\kernels\CSR_kernel.cl" />
+    <None Include="..\kernels\ELLG_kernel.cl" />
     <None Include="..\kernels\ELL_kernel.cl" />
+    <None Include="..\kernels\HLL_kernel.cl" />
+    <None Include="..\kernels\HLL_LOCAL_kernel.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -30,13 +30,15 @@ std::vector<CL_REAL> spmv_DIA(const struct dia_t* d_dia, const std::vector<CL_RE
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DN_MATRIX=" + std::to_string(d_dia->n) +
+						" -DSTRIDE_MATRIX=" + std::to_string(d_dia->stride) +
+						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + DIA_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_dia_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_dia_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + DIA_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_dia" };
 	//
 	size_t byte_size_d_ioff = d_dia->ndiags * sizeof(cl_int);
 	size_t byte_size_d_diags = d_dia->stride * d_dia->ndiags * sizeof(CL_REAL);
@@ -57,13 +59,11 @@ std::vector<CL_REAL> spmv_DIA(const struct dia_t* d_dia, const std::vector<CL_RE
 	queue.enqueueWriteBuffer(d_diags_buffer, CL_TRUE, 0, byte_size_d_diags, d_dia->diags);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_dia->n);
-	kernel.setArg(2, d_dia->stride);
-	kernel.setArg(3, d_ioff_buffer);
-	kernel.setArg(4, d_diags_buffer);
-	kernel.setArg(5, d_x_buffer);
-	kernel.setArg(6, dst_y_buffer);
-	kernel.setArg(7, cl::Local(local_byte_size_shia));
+	kernel.setArg(1, d_ioff_buffer);
+	kernel.setArg(2, d_diags_buffer);
+	kernel.setArg(3, d_x_buffer);
+	kernel.setArg(4, dst_y_buffer);
+	kernel.setArg(5, cl::Local(local_byte_size_shia));
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -75,21 +75,21 @@ std::vector<CL_REAL> spmv_DIA(const struct dia_t* d_dia, const std::vector<CL_RE
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
 		for (IndexType i = 0; i < d_dia->ndiags; i += MAX_NDIAG_PER_WG)
 		{
-			kernel.setArg(1, min(d_dia->ndiags - i, MAX_NDIAG_PER_WG)); // set njad for this iteration
-			kernel.setArg(8, i);
-			kernel.setArg(9, i * d_dia->stride);
+			kernel.setArg(0, min(d_dia->ndiags - i, MAX_NDIAG_PER_WG)); // set njad for this iteration
+			kernel.setArg(6, i);
+			kernel.setArg(7, i * d_dia->stride);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_dia->n, WORKGROUP_SIZE))),
+					cl::NDRange(jc::best_fit(d_dia->n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_dia->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_dia->nnz) / (nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_dia->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_dia->nnz) / (average_nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
 
 	return dst_y;
 }
@@ -104,13 +104,14 @@ std::vector<CL_REAL> spmv_HDIA(const struct hdia_t* d_hdia, const std::vector<CL
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DN_MATRIX=" + std::to_string(d_hdia->n) +
+						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_hdia_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_hdia_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_hdia" };
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);
@@ -135,16 +136,13 @@ std::vector<CL_REAL> spmv_HDIA(const struct hdia_t* d_hdia, const std::vector<CL
 	queue.enqueueWriteBuffer(d_memoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hdia->memoff);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_hdia->n);
-	kernel.setArg(1, d_hdia->nhoff);
-	kernel.setArg(2, HDIA_HACKSIZE);
-	kernel.setArg(3, d_ndiags_buffer);
-	kernel.setArg(4, d_ioff_buffer);
-	kernel.setArg(5, d_diags_buffer);
-	kernel.setArg(6, d_hoff_buffer);
-	kernel.setArg(7, d_memoff_buffer);
-	kernel.setArg(8, d_x_buffer);
-	kernel.setArg(9, dst_y_buffer);
+	kernel.setArg(0, d_ndiags_buffer);
+	kernel.setArg(1, d_ioff_buffer);
+	kernel.setArg(2, d_diags_buffer);
+	kernel.setArg(3, d_hoff_buffer);
+	kernel.setArg(4, d_memoff_buffer);
+	kernel.setArg(5, d_x_buffer);
+	kernel.setArg(6, dst_y_buffer);
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -155,14 +153,14 @@ std::vector<CL_REAL> spmv_HDIA(const struct hdia_t* d_hdia, const std::vector<CL
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hdia->n, WORKGROUP_SIZE))),
+				cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
 
 	return dst_y;
 }
@@ -177,13 +175,14 @@ std::vector<CL_REAL> spmv_HDIA_LOCAL(const struct hdia_t* d_hdia, const std::vec
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DN_MATRIX=" + std::to_string(d_hdia->n) +
+						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_LOCAL_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_hdia_local_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_hdia_local_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_LOCAL_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_hdia_local" };
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);
@@ -213,17 +212,14 @@ std::vector<CL_REAL> spmv_HDIA_LOCAL(const struct hdia_t* d_hdia, const std::vec
 	queue.enqueueWriteBuffer(d_memoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hdia->memoff);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_hdia->n);
-	kernel.setArg(1, d_hdia->nhoff);
-	kernel.setArg(2, HDIA_HACKSIZE);
-	kernel.setArg(3, d_ndiags_buffer);
-	kernel.setArg(4, d_ioff_buffer);
-	kernel.setArg(5, d_diags_buffer);
-	kernel.setArg(6, d_hoff_buffer);
-	kernel.setArg(7, d_memoff_buffer);
-	kernel.setArg(8, d_x_buffer);
-	kernel.setArg(9, dst_y_buffer);
-	kernel.setArg(10, cl::Local(local_byte_size_shhoff));
+	kernel.setArg(0, d_ndiags_buffer);
+	kernel.setArg(1, d_ioff_buffer);
+	kernel.setArg(2, d_diags_buffer);
+	kernel.setArg(3, d_hoff_buffer);
+	kernel.setArg(4, d_memoff_buffer);
+	kernel.setArg(5, d_x_buffer);
+	kernel.setArg(6, dst_y_buffer);
+	kernel.setArg(7, cl::Local(local_byte_size_shhoff));
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -235,14 +231,14 @@ std::vector<CL_REAL> spmv_HDIA_LOCAL(const struct hdia_t* d_hdia, const std::vec
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hdia->n, WORKGROUP_SIZE))),
+				cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
 
 	return dst_y;
 }

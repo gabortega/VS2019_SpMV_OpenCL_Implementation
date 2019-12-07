@@ -49,17 +49,23 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
-	cl::Program program_ell =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device);
+	//Macros
+	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+							" -DCSR_REPEAT=" + std::to_string(repeat) +
+							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
+	std::string ell_macro = "-DPRECISION=" + std::to_string(PRECISION) + 
+							" -DNELL=" + std::to_string(*(d_hyb->ellg.nell + d_hyb->ellg.n)) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
+							" -DSTRIDE_MATRIX=" + std::to_string(d_hyb->ellg.stride);
+	//
 	cl::Program program_csr =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel_ell{ program_ell, "spmv_ell_d" };
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_d" };
-#else
-	cl::Kernel kernel_ell{ program_ell, "spmv_ell_s" }; 
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, csr_macro.c_str());
+	cl::Kernel kernel_csr{ program_csr, "spmv_csr" };
+	//
+	cl::Program program_ell =
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, ell_macro.c_str());
+	cl::Kernel kernel_ell{ program_ell, "spmv_ell" };
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -87,13 +93,10 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
 		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->ellg.a);
 		//
-		kernel_ell.setArg(0, d_hyb->ellg.n);
-		kernel_ell.setArg(1, *(d_hyb->ellg.nell + d_hyb->ellg.n));
-		kernel_ell.setArg(2, d_hyb->ellg.stride);
-		kernel_ell.setArg(3, d_jcoeff_buffer);
-		kernel_ell.setArg(4, d_a_buffer);
-		kernel_ell.setArg(5, d_x_buffer);
-		kernel_ell.setArg(6, dst_y_buffer);
+		kernel_ell.setArg(0, d_jcoeff_buffer);
+		kernel_ell.setArg(1, d_a_buffer);
+		kernel_ell.setArg(2, d_x_buffer);
+		kernel_ell.setArg(3, dst_y_buffer);
 	}
 	//
 	// csr related
@@ -126,15 +129,12 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 		queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_hyb->csr.ja);
 		queue.enqueueWriteBuffer(d_val_buffer, CL_TRUE, 0, byte_size_d_val, d_hyb->csr.a);
 		//
-		kernel_csr.setArg(0, d_hyb->csr.n);
-		kernel_csr.setArg(1, repeat);
-		kernel_csr.setArg(2, coop);
-		kernel_csr.setArg(3, d_ia_buffer);
-		kernel_csr.setArg(4, d_ja_buffer);
-		kernel_csr.setArg(5, d_val_buffer);
-		kernel_csr.setArg(6, d_x_buffer);
-		kernel_csr.setArg(7, dst_y_buffer);
-		kernel_csr.setArg(8, cl::Local(local_byte_size_shdata));
+		kernel_csr.setArg(0, d_ia_buffer);
+		kernel_csr.setArg(1, d_ja_buffer);
+		kernel_csr.setArg(2, d_val_buffer);
+		kernel_csr.setArg(3, d_x_buffer);
+		kernel_csr.setArg(4, dst_y_buffer);
+		kernel_csr.setArg(5, cl::Local(local_byte_size_shdata));
 		//
 		std::cout << "!!! CSR kernel: repeat = " << repeat << ", coop = " << coop << ", nworkgroups = " << nworkgroups << " !!!" << std::endl << std::endl;
 		std::cout << "!!! A work-group uses " << local_byte_size_shdata << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
@@ -152,7 +152,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_ell,
 					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
+					cl::NDRange(jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
 		if (d_hyb->csr.nnz > 0)
@@ -205,17 +205,22 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
-	cl::Program program_ell =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device);
+	//Macros
+	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+							" -DCSR_REPEAT=" + std::to_string(repeat) +
+							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
+	std::string ellg_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
+							" -DSTRIDE_MATRIX=" + std::to_string(d_hyb->ellg.stride);
+	//
 	cl::Program program_csr =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel_ellg{ program_ell, "spmv_ellg_d" };
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_d" };
-#else
-	cl::Kernel kernel_ellg{ program_ell, "spmv_ellg_s" };
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, csr_macro.c_str());
+	cl::Kernel kernel_csr{ program_csr, "spmv_csr" };
+	//
+	cl::Program program_ellg =
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, ellg_macro.c_str());
+	cl::Kernel kernel_ellg{ program_ellg, "spmv_ellg" };
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -248,13 +253,11 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 		queue.enqueueWriteBuffer(d_jcoeff_buffer, CL_TRUE, 0, byte_size_d_jcoeff, d_hyb->ellg.jcoeff);
 		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->ellg.a);
 		//
-		kernel_ellg.setArg(0, d_hyb->ellg.n);
-		kernel_ellg.setArg(1, d_hyb->ellg.stride);
-		kernel_ellg.setArg(2, d_nell_buffer);
-		kernel_ellg.setArg(3, d_jcoeff_buffer);
-		kernel_ellg.setArg(4, d_a_buffer);
-		kernel_ellg.setArg(5, d_x_buffer);
-		kernel_ellg.setArg(6, dst_y_buffer);
+		kernel_ellg.setArg(0, d_nell_buffer);
+		kernel_ellg.setArg(1, d_jcoeff_buffer);
+		kernel_ellg.setArg(2, d_a_buffer);
+		kernel_ellg.setArg(3, d_x_buffer);
+		kernel_ellg.setArg(4, dst_y_buffer);
 	}
 	//
 	// csr related
@@ -287,15 +290,12 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 		queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_hyb->csr.ja);
 		queue.enqueueWriteBuffer(d_val_buffer, CL_TRUE, 0, byte_size_d_val, d_hyb->csr.a);
 		//
-		kernel_csr.setArg(0, d_hyb->csr.n);
-		kernel_csr.setArg(1, repeat);
-		kernel_csr.setArg(2, coop);
-		kernel_csr.setArg(3, d_ia_buffer);
-		kernel_csr.setArg(4, d_ja_buffer);
-		kernel_csr.setArg(5, d_val_buffer);
-		kernel_csr.setArg(6, d_x_buffer);
-		kernel_csr.setArg(7, dst_y_buffer);
-		kernel_csr.setArg(8, cl::Local(local_byte_size_shdata));
+		kernel_csr.setArg(0, d_ia_buffer);
+		kernel_csr.setArg(1, d_ja_buffer);
+		kernel_csr.setArg(2, d_val_buffer);
+		kernel_csr.setArg(3, d_x_buffer);
+		kernel_csr.setArg(4, dst_y_buffer);
+		kernel_csr.setArg(5, cl::Local(local_byte_size_shdata));
 		//
 		std::cout << "!!! CSR kernel: repeat = " << repeat << ", coop = " << coop << ", nworkgroups = " << nworkgroups << " !!!" << std::endl << std::endl;
 		std::cout << "!!! A work-group uses " << local_byte_size_shdata << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
@@ -313,7 +313,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_ellg,
 					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE))),
+					cl::NDRange(jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
 		if (d_hyb->csr.nnz > 0)
@@ -367,17 +367,22 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
-	cl::Program program_ell =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device);
+	//Macros
+	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+							" -DCSR_REPEAT=" + std::to_string(repeat) +
+							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
+	std::string hll_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+							" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n);
+	//
 	cl::Program program_csr =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel_hll{ program_ell, "spmv_hll_d" };
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_d" };
-#else
-	cl::Kernel kernel_hll{ program_ell, "spmv_hll_s" };
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, csr_macro.c_str());
+	cl::Kernel kernel_csr{ program_csr, "spmv_csr" };
+	//
+	cl::Program program_hll =
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, hll_macro.c_str());
+	cl::Kernel kernel_hll{ program_hll, "spmv_hll" };
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -415,14 +420,12 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 		queue.enqueueWriteBuffer(d_hoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hyb->hll.hoff);
 		queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hyb->hll.a);
 		//
-		kernel_hll.setArg(0, d_hyb->hll.n);
-		kernel_hll.setArg(1, HLL_HACKSIZE);
-		kernel_hll.setArg(2, d_nell_buffer);
-		kernel_hll.setArg(3, d_jcoeff_buffer);
-		kernel_hll.setArg(4, d_hoff_buffer);
-		kernel_hll.setArg(5, d_a_buffer);
-		kernel_hll.setArg(6, d_x_buffer);
-		kernel_hll.setArg(7, dst_y_buffer);
+		kernel_hll.setArg(0, d_nell_buffer);
+		kernel_hll.setArg(1, d_jcoeff_buffer);
+		kernel_hll.setArg(2, d_hoff_buffer);
+		kernel_hll.setArg(3, d_a_buffer);
+		kernel_hll.setArg(4, d_x_buffer);
+		kernel_hll.setArg(5, dst_y_buffer);
 	}
 	//
 	// csr related
@@ -455,15 +458,12 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 		queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_hyb->csr.ja);
 		queue.enqueueWriteBuffer(d_val_buffer, CL_TRUE, 0, byte_size_d_val, d_hyb->csr.a);
 		//
-		kernel_csr.setArg(0, d_hyb->csr.n);
-		kernel_csr.setArg(1, repeat);
-		kernel_csr.setArg(2, coop);
-		kernel_csr.setArg(3, d_ia_buffer);
-		kernel_csr.setArg(4, d_ja_buffer);
-		kernel_csr.setArg(5, d_val_buffer);
-		kernel_csr.setArg(6, d_x_buffer);
-		kernel_csr.setArg(7, dst_y_buffer);
-		kernel_csr.setArg(8, cl::Local(local_byte_size_shdata));
+		kernel_csr.setArg(0, d_ia_buffer);
+		kernel_csr.setArg(1, d_ja_buffer);
+		kernel_csr.setArg(2, d_val_buffer);
+		kernel_csr.setArg(3, d_x_buffer);
+		kernel_csr.setArg(4, dst_y_buffer);
+		kernel_csr.setArg(5, cl::Local(local_byte_size_shdata));
 		//
 		std::cout << "!!! CSR kernel: repeat = " << repeat << ", coop = " << coop << ", nworkgroups = " << nworkgroups << " !!!" << std::endl << std::endl;
 		std::cout << "!!! A work-group uses " << local_byte_size_shdata << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
@@ -481,7 +481,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_hll,
 					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
+					cl::NDRange(jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
 		if (d_hyb->csr.nnz > 0)
@@ -536,17 +536,22 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
-	cl::Program program_ell =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device);
+	//Macros
+	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+							" -DCSR_REPEAT=" + std::to_string(repeat) +
+							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
+	std::string hll_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+							" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
+							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n);
+	//
 	cl::Program program_csr =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel_hll_local{ program_ell, "spmv_hll_local_d" };
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_d" };
-#else
-	cl::Kernel kernel_hll_local{ program_ell, "spmv_hll_local_s" };
-	cl::Kernel kernel_csr{ program_csr, "spmv_csr_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, csr_macro.c_str());
+	cl::Kernel kernel_csr{ program_csr, "spmv_csr" };
+	//
+	cl::Program program_hll_local =
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_LOCAL_KERNEL_FILE, context, device, hll_macro.c_str());
+	cl::Kernel kernel_hll_local{ program_hll_local, "spmv_hll_local" };
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -589,15 +594,13 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 		//
 		size_t local_byte_size_shhoff = WORKGROUP_SIZE / HLL_HACKSIZE * sizeof(cl_uint);
 		//
-		kernel_hll_local.setArg(0, d_hyb->hll.n);
-		kernel_hll_local.setArg(1, HLL_HACKSIZE);
-		kernel_hll_local.setArg(2, d_nell_buffer);
-		kernel_hll_local.setArg(3, d_jcoeff_buffer);
-		kernel_hll_local.setArg(4, d_hoff_buffer);
-		kernel_hll_local.setArg(5, d_a_buffer);
-		kernel_hll_local.setArg(6, d_x_buffer);
-		kernel_hll_local.setArg(7, dst_y_buffer);
-		kernel_hll_local.setArg(8, cl::Local(local_byte_size_shhoff));
+		kernel_hll_local.setArg(0, d_nell_buffer);
+		kernel_hll_local.setArg(1, d_jcoeff_buffer);
+		kernel_hll_local.setArg(2, d_hoff_buffer);
+		kernel_hll_local.setArg(3, d_a_buffer);
+		kernel_hll_local.setArg(4, d_x_buffer);
+		kernel_hll_local.setArg(5, dst_y_buffer);
+		kernel_hll_local.setArg(6, cl::Local(local_byte_size_shhoff));
 		//
 		std::cout << "!!! HLL_LOCAL: A work-group uses " << local_byte_size_shhoff << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 	}
@@ -632,15 +635,12 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 		queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_hyb->csr.ja);
 		queue.enqueueWriteBuffer(d_val_buffer, CL_TRUE, 0, byte_size_d_val, d_hyb->csr.a);
 		//
-		kernel_csr.setArg(0, d_hyb->csr.n);
-		kernel_csr.setArg(1, repeat);
-		kernel_csr.setArg(2, coop);
-		kernel_csr.setArg(3, d_ia_buffer);
-		kernel_csr.setArg(4, d_ja_buffer);
-		kernel_csr.setArg(5, d_val_buffer);
-		kernel_csr.setArg(6, d_x_buffer);
-		kernel_csr.setArg(7, dst_y_buffer);
-		kernel_csr.setArg(8, cl::Local(local_byte_size_shdata));
+		kernel_csr.setArg(0, d_ia_buffer);
+		kernel_csr.setArg(1, d_ja_buffer);
+		kernel_csr.setArg(2, d_val_buffer);
+		kernel_csr.setArg(3, d_x_buffer);
+		kernel_csr.setArg(4, dst_y_buffer);
+		kernel_csr.setArg(5, cl::Local(local_byte_size_shdata));
 		//
 		std::cout << "!!! CSR kernel: repeat = " << repeat << ", coop = " << coop << ", nworkgroups = " << nworkgroups << " !!!" << std::endl << std::endl;
 		std::cout << "!!! A work-group uses " << local_byte_size_shdata << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
@@ -658,7 +658,7 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_hll_local,
 					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE))),
+					cl::NDRange(jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
 		if (d_hyb->csr.nnz > 0)

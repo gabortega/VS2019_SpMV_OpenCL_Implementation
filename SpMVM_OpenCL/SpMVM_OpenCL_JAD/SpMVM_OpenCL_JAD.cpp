@@ -33,13 +33,13 @@ std::vector<CL_REAL> spmv_JAD(const struct jad_t* d_jad, const std::vector<CL_RE
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DN_MATRIX=" + std::to_string(d_jad->n);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + JAD_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_jad_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_jad_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + JAD_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_jad" };
 	//
 	size_t byte_size_d_ia = (d_jad->njad[d_jad->n] + 1) * sizeof(cl_uint);
 	size_t byte_size_d_ja = d_jad->total * sizeof(cl_uint);
@@ -66,14 +66,13 @@ std::vector<CL_REAL> spmv_JAD(const struct jad_t* d_jad, const std::vector<CL_RE
 	queue.enqueueWriteBuffer(d_perm_buffer, CL_TRUE, 0, byte_size_d_perm, d_jad->perm);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_jad->n);
-	kernel.setArg(2, d_ia_buffer);
-	kernel.setArg(3, d_ja_buffer);
-	kernel.setArg(4, d_a_buffer);
-	kernel.setArg(5, d_perm_buffer);
-	kernel.setArg(6, d_x_buffer);
-	kernel.setArg(7, dst_y_buffer);
-	kernel.setArg(8, cl::Local(local_byte_size_shia));
+	kernel.setArg(1, d_ia_buffer);
+	kernel.setArg(2, d_ja_buffer);
+	kernel.setArg(3, d_a_buffer);
+	kernel.setArg(4, d_perm_buffer);
+	kernel.setArg(5, d_x_buffer);
+	kernel.setArg(6, dst_y_buffer);
+	kernel.setArg(7, cl::Local(local_byte_size_shia));
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -85,12 +84,12 @@ std::vector<CL_REAL> spmv_JAD(const struct jad_t* d_jad, const std::vector<CL_RE
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
 		for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += MAX_NJAD_PER_WG)
 		{
-			kernel.setArg(1, min(*(d_jad->njad + d_jad->n) - i, MAX_NJAD_PER_WG)); // set njad for this iteration
-			kernel.setArg(9, i);
+			kernel.setArg(0, min(*(d_jad->njad + d_jad->n) - i, MAX_NJAD_PER_WG)); // set njad for this iteration
+			kernel.setArg(8, i);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
-					cl::NDRange(min(MAX_THREADS, jc::best_fit(d_jad->n, WORKGROUP_SIZE))),
+					cl::NDRange(jc::best_fit(d_jad->n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
 		std::cout << "Run: " << r+1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_jad->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";

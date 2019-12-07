@@ -33,13 +33,15 @@ std::vector<CL_REAL> spmv_ELL(const struct ellg_t* d_ell, const std::vector<CL_R
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DNELL=" + std::to_string(*(d_ell->nell + d_ell->n)) +
+						" -DN_MATRIX=" + std::to_string(d_ell->n) +
+						" -DSTRIDE_MATRIX=" + std::to_string(d_ell->stride);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_ell_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_ell_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_ell" };
 	//
 	size_t byte_size_d_jcoeff = d_ell->stride * *(d_ell->nell + d_ell->n) * sizeof(cl_uint);
 	size_t byte_size_d_a = d_ell->stride * *(d_ell->nell + d_ell->n) * sizeof(CL_REAL);
@@ -55,13 +57,10 @@ std::vector<CL_REAL> spmv_ELL(const struct ellg_t* d_ell, const std::vector<CL_R
 	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_ell->a);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_ell->n);
-	kernel.setArg(1, *(d_ell->nell + d_ell->n));
-	kernel.setArg(2, d_ell->stride);
-	kernel.setArg(3, d_jcoeff_buffer);
-	kernel.setArg(4, d_a_buffer);
-	kernel.setArg(5, d_x_buffer);
-	kernel.setArg(6, dst_y_buffer);
+	kernel.setArg(0, d_jcoeff_buffer);
+	kernel.setArg(1, d_a_buffer);
+	kernel.setArg(2, d_x_buffer);
+	kernel.setArg(3, dst_y_buffer);
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -72,7 +71,7 @@ std::vector<CL_REAL> spmv_ELL(const struct ellg_t* d_ell, const std::vector<CL_R
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_ell->n, WORKGROUP_SIZE))),
+				cl::NDRange(jc::best_fit(d_ell->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
 		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_ell->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
@@ -98,14 +97,15 @@ std::vector<CL_REAL> spmv_ELLG(const struct ellg_t* d_ellg, const std::vector<CL
     cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
     cl::Context context{ device };
     cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
-    //
-    cl::Program program =
-        jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_ellg_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_ellg_s" };
-#endif
+	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DN_MATRIX=" + std::to_string(d_ellg->n) +
+						" -DSTRIDE_MATRIX=" + std::to_string(d_ellg->stride);
+	//
+	cl::Program program =
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_ellg" };
     //
     size_t byte_size_d_nell = (d_ellg->n + 1) * sizeof(cl_uint);
     size_t byte_size_d_jcoeff = d_ellg->stride * *(d_ellg->nell + d_ellg->n) * sizeof(cl_uint);
@@ -124,13 +124,11 @@ std::vector<CL_REAL> spmv_ELLG(const struct ellg_t* d_ellg, const std::vector<CL
     queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_ellg->a);
     queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
     //
-    kernel.setArg(0, d_ellg->n);
-    kernel.setArg(1, d_ellg->stride);
-    kernel.setArg(2, d_nell_buffer);
-    kernel.setArg(3, d_jcoeff_buffer);
-    kernel.setArg(4, d_a_buffer);
-    kernel.setArg(5, d_x_buffer);
-    kernel.setArg(6, dst_y_buffer);
+    kernel.setArg(0, d_nell_buffer);
+    kernel.setArg(1, d_jcoeff_buffer);
+    kernel.setArg(2, d_a_buffer);
+    kernel.setArg(3, d_x_buffer);
+    kernel.setArg(4, dst_y_buffer);
     //
     cl_ulong nanoseconds;
     cl_ulong total_nanoseconds = 0;
@@ -141,7 +139,7 @@ std::vector<CL_REAL> spmv_ELLG(const struct ellg_t* d_ellg, const std::vector<CL
         nanoseconds =
             jc::run_and_time_kernel(kernel,
                 queue,
-				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_ellg->n, WORKGROUP_SIZE))),
+				cl::NDRange(jc::best_fit(d_ellg->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
 		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_ellg->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
         total_nanoseconds += nanoseconds;
@@ -168,13 +166,14 @@ std::vector<CL_REAL> spmv_HLL(const struct hll_t* d_hll, const std::vector<CL_RE
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) + 
+						" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
+						" -DN_MATRIX=" + std::to_string(d_hll->n);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_hll_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_hll_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_hll" };
 	//
 	size_t byte_size_d_nell = d_hll->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_jcoeff = d_hll->total_mem * sizeof(cl_uint);
@@ -196,14 +195,12 @@ std::vector<CL_REAL> spmv_HLL(const struct hll_t* d_hll, const std::vector<CL_RE
 	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hll->a);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_hll->n);
-	kernel.setArg(1, HLL_HACKSIZE);
-	kernel.setArg(2, d_nell_buffer);
-	kernel.setArg(3, d_jcoeff_buffer);
-	kernel.setArg(4, d_hoff_buffer);
-	kernel.setArg(5, d_a_buffer);
-	kernel.setArg(6, d_x_buffer);
-	kernel.setArg(7, dst_y_buffer);
+	kernel.setArg(0, d_nell_buffer);
+	kernel.setArg(1, d_jcoeff_buffer);
+	kernel.setArg(2, d_hoff_buffer);
+	kernel.setArg(3, d_a_buffer);
+	kernel.setArg(4, d_x_buffer);
+	kernel.setArg(5, dst_y_buffer);
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -214,7 +211,7 @@ std::vector<CL_REAL> spmv_HLL(const struct hll_t* d_hll, const std::vector<CL_RE
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hll->n, WORKGROUP_SIZE))),
+				cl::NDRange(jc::best_fit(d_hll->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
 		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hll->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;
@@ -242,13 +239,14 @@ std::vector<CL_REAL> spmv_HLL_LOCAL(const struct hll_t* d_hll, const std::vector
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
+						" -DN_MATRIX=" + std::to_string(d_hll->n);
+	//
 	cl::Program program =
-		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_LOCAL_KERNEL_FILE, context, device);
-#if PRECISION == 2
-	cl::Kernel kernel{ program, "spmv_hll_local_d" };
-#else
-	cl::Kernel kernel{ program, "spmv_hll_local_s" };
-#endif
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_LOCAL_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_hll_local" };
 	//
 	size_t byte_size_d_nell = d_hll->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_jcoeff = d_hll->total_mem * sizeof(cl_uint);
@@ -275,15 +273,13 @@ std::vector<CL_REAL> spmv_HLL_LOCAL(const struct hll_t* d_hll, const std::vector
 	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_hll->a);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(0, d_hll->n);
-	kernel.setArg(1, HLL_HACKSIZE);
-	kernel.setArg(2, d_nell_buffer);
-	kernel.setArg(3, d_jcoeff_buffer);
-	kernel.setArg(4, d_hoff_buffer);
-	kernel.setArg(5, d_a_buffer);
-	kernel.setArg(6, d_x_buffer);
-	kernel.setArg(7, dst_y_buffer);
-	kernel.setArg(8, cl::Local(local_byte_size_shhoff));
+	kernel.setArg(0, d_nell_buffer);
+	kernel.setArg(1, d_jcoeff_buffer);
+	kernel.setArg(2, d_hoff_buffer);
+	kernel.setArg(3, d_a_buffer);
+	kernel.setArg(4, d_x_buffer);
+	kernel.setArg(5, dst_y_buffer);
+	kernel.setArg(6, cl::Local(local_byte_size_shhoff));
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -295,7 +291,7 @@ std::vector<CL_REAL> spmv_HLL_LOCAL(const struct hll_t* d_hll, const std::vector
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-				cl::NDRange(min(MAX_THREADS, jc::best_fit(d_hll->n, WORKGROUP_SIZE))),
+				cl::NDRange(jc::best_fit(d_hll->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
 		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hll->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
 		total_nanoseconds += nanoseconds;

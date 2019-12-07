@@ -42,18 +42,18 @@
 #define CSR_KERNEL_FILE "CSR_kernel.cl"
 #define JAD_KERNEL_FILE "JAD_kernel.cl"
 #define ELL_KERNEL_FILE "ELL_kernel.cl"
-#define ELLG_KERNEL_FILE "ELL_kernel.cl"
-#define HLL_KERNEL_FILE "ELL_kernel.cl"
-#define HLL_LOCAL_KERNEL_FILE "ELL_kernel.cl"
+#define ELLG_KERNEL_FILE "ELLG_kernel.cl"
+#define HLL_KERNEL_FILE "HLL_kernel.cl"
+#define HLL_LOCAL_KERNEL_FILE "HLL_LOCAL_kernel.cl"
 #define DIA_KERNEL_FILE "DIA_kernel.cl"
-#define HDIA_KERNEL_FILE "DIA_kernel.cl"
-#define HDIA_LOCAL_KERNEL_FILE "DIA_kernel.cl"
+#define HDIA_KERNEL_FILE "HDIA_kernel.cl"
+#define HDIA_LOCAL_KERNEL_FILE "HDIA_LOCAL_kernel.cl"
 #define HYB_ELL_KERNEL_FILE "HYB_kernel.cl"
 #define HYB_ELLG_KERNEL_FILE "HYB_kernel.cl"
 #define HYB_HLL_KERNEL_FILE "HYB_kernel.cl"
 #define HYB_HLL_LOCAL_KERNEL_FILE "HYB_kernel.cl"
-//$
-#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048
+//
+//#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048 !!! NO LONGER USED !!!
 #define WARP_SIZE 32
 #define WORKGROUP_SIZE 256 // default is 256
 #define WARPS_PER_WORKGROUP (WORKGROUP_SIZE / WARP_SIZE)
