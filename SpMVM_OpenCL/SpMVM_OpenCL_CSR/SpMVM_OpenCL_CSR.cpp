@@ -1,6 +1,6 @@
 #include<compiler_config.h>
 
-#if CSR
+#if CSR_SEQ || CSR
 
 #include<stdio.h>
 #include<string>
@@ -12,6 +12,7 @@
 #include<JC/util.hpp>
 #include<IO/mmio.h>
 #include<IO/convert_input.h>
+#include<SEQ/CSR.hpp>
 
 #if PRECISION == 2
 #define CL_REAL cl_double
@@ -22,7 +23,36 @@
 //#define CL_REAL cl_half // TODO?
 #endif
 
-std::vector<CL_REAL> spmv_CSR(const struct csr_t* d_csr, const std::vector<CL_REAL> d_x)
+#if CSR_SEQ
+std::vector<REAL> spmv_CSR_sequential(struct csr_t* d_csr, const std::vector<REAL> d_x)
+{
+	//decrement all values
+	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]--;
+	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]--;
+	//
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = CSR_sequential(d_csr, d_x, dst_y);
+		printRunInfo(r + 1, nanoseconds, (d_csr->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_csr->nnz));
+	//increment all values
+	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
+	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;
+
+	return dst_y;
+}
+#endif
+
+#if CSR
+std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_x)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]--;
@@ -95,18 +125,19 @@ std::vector<CL_REAL> spmv_CSR(const struct csr_t* d_csr, const std::vector<CL_RE
 				queue,
 				cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 				cl::NDRange(CSR_WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_csr->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_csr->nnz));
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_csr->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+	printAverageRunInfo(average_nanoseconds, (d_csr->nnz));
 	//increment all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;
 
 	return dst_y;
 }
+#endif
 
 int main(void)
 {
@@ -142,21 +173,39 @@ int main(void)
 	for (IndexType i = 0; i < n; i++)
 		x.push_back(i);
 
+#if CSR_SEQ
+	std::cout << std::endl << "-- STARTING CSR SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y1 = spmv_CSR_sequential(&csr, x);
+	std::cout << std::endl << "-- FINISHED CSR SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (CSR_SEQ_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y1.size(); i++)
+			std::cout << y1[i] << " ";
+		std::cout << std::endl;
+	}
+#endif
+#if CSR
 	std::cout << std::endl << "-- STARTING CSR KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y = spmv_CSR(&csr, x);
+	std::vector<CL_REAL> y2 = spmv_CSR(&csr, x);
 	std::cout << std::endl << "-- FINISHED CSR KERNEL OPERATION --" << std::endl << std::endl;
 	if (CSR_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
-		for (IndexType i = 0; i < y.size(); i++)
-			std::cout << y[i] << " ";
+		for (IndexType i = 0; i < y2.size(); i++)
+			std::cout << y2[i] << " ";
 		std::cout << std::endl;
 	}
-
+#endif
 	
 	x.clear(); 
 	FreeCSR(&csr);
-	y.clear();
+#if CSR_SEQ
+	y1.clear();
+#endif
+#if CSR
+	y2.clear();
+#endif
 #if DEBUG
 	system("PAUSE"); // for debugging
 #endif

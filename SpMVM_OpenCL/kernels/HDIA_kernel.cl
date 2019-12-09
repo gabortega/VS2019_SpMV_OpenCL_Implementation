@@ -17,7 +17,7 @@ __kernel void spmv_hdia(
 	__private unsigned int row_hack_id, row_memoff, ndiags, row_hoff;
 
 	__private unsigned int i;
-	__private int q;
+	__private long q;
 	__private double r;
 
 	if (row_id >= N_MATRIX) return;
@@ -56,7 +56,7 @@ __kernel void spmv_hdia(
 	__private unsigned int row_hack_id, row_memoff, ndiags, row_hoff;
 
 	__private unsigned int i;
-	__private int q;
+	__private long q;
 	__private float r;
 
 	if (row_id >= N_MATRIX) return;

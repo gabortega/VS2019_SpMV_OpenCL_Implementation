@@ -36,8 +36,7 @@ __kernel void spmv_hll_local(
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
-		k = d_jcoeff[j];
-		r += d_a[j] * d_x[k];
+		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
 	dst_y[row_id] += r;
 }
@@ -80,8 +79,7 @@ __kernel void spmv_hll_local(
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
-		k = d_jcoeff[j];
-		r += d_a[j] * d_x[k];
+		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
 	dst_y[row_id] += r;
 }

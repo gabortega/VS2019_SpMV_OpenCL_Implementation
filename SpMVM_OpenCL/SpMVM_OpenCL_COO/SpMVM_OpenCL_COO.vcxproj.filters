@@ -25,6 +25,9 @@
     <Filter Include="Header Files\compiler_config">
       <UniqueIdentifier>{f32d1dc5-020e-40e8-8390-7ef114a901f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\SEQ">
+      <UniqueIdentifier>{8894f06e-61e8-4453-89f2-6334e80e65fb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SpMVM_OpenCL_COO.cpp">
@@ -49,6 +52,9 @@
     </ClInclude>
     <ClInclude Include="..\include\util_misc.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\SEQ\COO.hpp">
+      <Filter>Header Files\SEQ</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -29,6 +29,13 @@ struct coo_t {
 	REAL* val;
 };
 
+/* General Matrix format */
+struct mat_t {
+	IndexType n;
+	IndexType nnz;
+	REAL* val;
+};
+
 /* CSR format type */
 struct csr_t {
 	IndexType n;
@@ -114,6 +121,7 @@ struct hybhll_t {
 
 void MM_To_COO(const char* filename, struct coo_t* coo, int log);
 void COO_To_CSR(struct coo_t* coo, struct csr_t* csr, int log);
+void COO_To_MAT(struct coo_t* coo, struct mat_t* mat, int log);
 void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log);
 int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log);
 int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log);
@@ -128,6 +136,7 @@ void infdia(IndexType n, IndexType* ja, IndexType* ia, IndexType* ind, IndexType
 void hinfdia(IndexType lowerb, IndexType higherb, IndexType n, IndexType* ja, IndexType* ia, IndexType* ind, IndexType idiag);
 
 void FreeCOO(struct coo_t* coo);
+void FreeMAT(struct mat_t* mat);
 void FreeCSR(struct csr_t* csr);
 void FreeJAD(struct jad_t* jad);
 void FreeELLG(struct ellg_t* ellg);

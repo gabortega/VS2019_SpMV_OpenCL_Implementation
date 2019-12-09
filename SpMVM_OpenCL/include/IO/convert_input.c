@@ -105,6 +105,28 @@ void MM_To_COO(const char* filename, struct coo_t* coo, int log)
 	fclose(p);
 }
 
+void COO_To_MAT(struct coo_t* coo, struct mat_t* mat, int log)
+{
+	mat->n = coo->n;
+	mat->nnz = coo->nnz;
+	mat->val = (REAL*)calloc((unsigned long)mat->n * mat->n, sizeof(REAL));
+	for (IndexType i = 0; i < mat->nnz; i++)
+		*(mat->val + ((*(coo->jc + i) - 1) * mat->n) + (*(coo->ir + i) - 1)) = *(coo->val + i);
+
+	if (log)
+	{
+		fprintf(stdout, "MAT: Matrix N = %d, NNZ = %d\n", mat->n, mat->nnz);
+		for (IndexType i = 0; i < mat->n; i++)
+		{
+			for (IndexType j = 0; j < mat->n; j++)
+				fprintf(stdout, "%20.19g ", mat->val[j + (i * mat->n)]);
+			fprintf(stdout, "\n");
+		}
+		fprintf(stdout, "\n");
+		
+	}
+}
+
 /*--------------------------------------------------*/
 void COO_To_CSR(struct coo_t *coo, struct csr_t *csr, int log) 
 {
@@ -311,7 +333,7 @@ void PadJADWARP(struct jad_t* jad)
 
 	jad->total = nnz2;
 	jad->a = (REAL*)calloc(nnz2, sizeof(REAL));
-	jad->ja = (IndexType*)malloc(nnz2 * sizeof(IndexType));
+	jad->ja = (IndexType*)calloc(nnz2, sizeof(IndexType));
 	for (i = 0; i < nnz2; i++)
 		jad->ja[i] = 1;
 
@@ -963,6 +985,12 @@ void FreeCOO(struct coo_t* coo)
 	free(coo->ir);
 	free(coo->jc);
 	free(coo->val);
+}
+
+/*---------------------------*/
+void FreeMAT(struct mat_t* mat)
+{
+	free(mat->val);
 }
 
 /*---------------------------*/

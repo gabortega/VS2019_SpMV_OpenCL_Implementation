@@ -171,6 +171,8 @@
     <ClInclude Include="..\config\compiler_config.h" />
     <ClInclude Include="..\include\IO\convert_input.h" />
     <ClInclude Include="..\include\IO\mmio.h" />
+    <ClInclude Include="..\include\SEQ\DIA.hpp" />
+    <ClInclude Include="..\include\SEQ\HDIA.hpp" />
     <ClInclude Include="..\include\util_misc.hpp" />
   </ItemGroup>
   <ItemGroup>

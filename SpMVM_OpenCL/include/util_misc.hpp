@@ -6,6 +6,9 @@
 #include<direct.h>
 #include<stdlib.h>
 #include<stdio.h>
+#include<iostream>
+
+#include<compiler_config.h>
 
 std::string getTimeOfRun()
 {
@@ -15,6 +18,16 @@ std::string getTimeOfRun()
 	return "_" + std::to_string(ltm.tm_year + 1900) + std::to_string(ltm.tm_mon + 1) + std::to_string(ltm.tm_mday) + "_" + std::to_string(ltm.tm_hour) + (ltm.tm_min < 10 ? "0" : "") + std::to_string(ltm.tm_min) + (ltm.tm_sec < 10 ? "0" : "") + std::to_string(ltm.tm_sec);
 }
 #endif
+
+void printRunInfo(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz)
+{
+	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << (2 * nnz / (nanoseconds / 1e9)) / 1e9 << "GFLOP/s\n";
+}
+
+void printAverageRunInfo(unsigned long long average_nanoseconds, unsigned long long nnz)
+{
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << (2 * nnz / (average_nanoseconds / 1e9)) / 1e9 << "GFLOP/s\n";
+}
 
 int createOutputDirectory(std::string outputDirRoot, std::string outputDir) {
 	int err;

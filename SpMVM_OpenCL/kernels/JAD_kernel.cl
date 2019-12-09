@@ -15,14 +15,13 @@ __kernel void spmv_jad(unsigned int njad,
 {
 	__private unsigned int row_id = get_global_id(0);
 	__private unsigned int local_row_id = get_local_id(0);
-	__private unsigned int workgroup_size = get_local_size(0);
 
 	__private unsigned int i, j;
 	__private long p, q;
 	__private double r;
 
 #pragma unroll
-	for (i = local_row_id; i < njad + 1; i += workgroup_size)
+	for (i = local_row_id; i < njad + 1; i += WORKGROUP_SIZE)
 		sharedia[i] = d_ia[ia_offset + i];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -61,14 +60,13 @@ __kernel void spmv_jad(unsigned int njad,
 {
 	__private unsigned int row_id = get_global_id(0);
 	__private unsigned int local_row_id = get_local_id(0);
-	__private unsigned int workgroup_size = get_local_size(0);
 
 	__private unsigned int i, j;
 	__private long p, q;
 	__private float r;
 
 #pragma unroll
-	for (i = local_row_id; i < njad + 1; i += workgroup_size)
+	for (i = local_row_id; i < njad + 1; i += WORKGROUP_SIZE)
 		sharedia[i] = d_ia[ia_offset + i];
 	barrier(CLK_LOCAL_MEM_FENCE);
 

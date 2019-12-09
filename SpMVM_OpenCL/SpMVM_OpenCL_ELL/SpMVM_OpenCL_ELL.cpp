@@ -1,6 +1,6 @@
 #include<compiler_config.h>
 
-#if ELL || ELLG || HLL || HLL_LOCAL
+#if ELL_SEQ || ELL || ELLG_SEQ || ELLG || HLL_SEQ || HLL || HLL_LOCAL
 
 #include<stdio.h>
 #include<string>
@@ -11,6 +11,9 @@
 #include<JC/util.hpp>
 #include<IO/mmio.h>
 #include<IO/convert_input.h>
+#include<SEQ/ELL.hpp>
+#include<SEQ/ELLG.hpp>
+#include<SEQ/HLL.hpp>
 
 #if PRECISION == 2
 #define CL_REAL cl_double
@@ -21,8 +24,34 @@
 //#define CL_REAL cl_half // TODO?
 #endif
 
+#if ELL_SEQ
+std::vector<REAL> spmv_ELL_sequential(struct ellg_t* d_ell, const std::vector<REAL> d_x)
+{
+	//decrement all values
+	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]--;
+	//
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = ELL_sequential(d_ell, d_x, dst_y);
+		printRunInfo(r + 1, nanoseconds, (d_ell->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_ell->nnz));
+	//increment all values
+	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]++;
+
+	return dst_y;
+}
+#endif
+
 #if ELL
-std::vector<CL_REAL> spmv_ELL(const struct ellg_t* d_ell, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_ELL(struct ellg_t* d_ell, const std::vector<CL_REAL> d_x)
 {	
 	//decrement all values
 	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]--;
@@ -86,8 +115,34 @@ std::vector<CL_REAL> spmv_ELL(const struct ellg_t* d_ell, const std::vector<CL_R
 }
 #endif
 
+#if ELLG_SEQ
+std::vector<REAL> spmv_ELLG_sequential(struct ellg_t* d_ellg, const std::vector<REAL> d_x)
+{
+	//decrement all values
+	for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]--;
+	//
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = ELLG_sequential(d_ellg, d_x, dst_y);
+		printRunInfo(r + 1, nanoseconds, (d_ellg->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_ellg->nnz));
+	//increment all values
+	for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]++;
+
+	return dst_y;
+}
+#endif
+
 #if ELLG
-std::vector<CL_REAL> spmv_ELLG(const struct ellg_t* d_ellg, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_ELLG(struct ellg_t* d_ellg, const std::vector<CL_REAL> d_x)
 {
     //decrement all values
     for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]--;
@@ -154,12 +209,41 @@ std::vector<CL_REAL> spmv_ELLG(const struct ellg_t* d_ellg, const std::vector<CL
 }
 #endif
 
-#if HLL
-std::vector<CL_REAL> spmv_HLL(const struct hll_t* d_hll, const std::vector<CL_REAL> d_x)
+#if HLL_SEQ
+std::vector<REAL> spmv_HLL_sequential(struct hll_t* d_hll, const std::vector<REAL> d_x)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]--;
 	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]--;
+	//
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = HLL_sequential(d_hll, d_x, dst_y);
+		printRunInfo(r + 1, nanoseconds, (d_hll->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_hll->nnz));
+	//increment all values
+	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]++;
+	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]++;
+
+	return dst_y;
+}
+#endif
+
+#if HLL
+std::vector<CL_REAL> spmv_HLL(struct hll_t* d_hll, const std::vector<CL_REAL> d_x)
+{
+	//decrement all values
+	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]--;
+	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]--;
+	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
@@ -228,11 +312,12 @@ std::vector<CL_REAL> spmv_HLL(const struct hll_t* d_hll, const std::vector<CL_RE
 #endif
 
 #if HLL_LOCAL
-std::vector<CL_REAL> spmv_HLL_LOCAL(const struct hll_t* d_hll, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HLL_LOCAL(struct hll_t* d_hll, const std::vector<CL_REAL> d_x)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]--;
 	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]--;
+	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
@@ -322,10 +407,10 @@ int main(void)
 	FILE* f;
 	struct coo_t coo;
 	struct csr_t csr;
-#if ELL || ELLG
+#if ELL_SEQ || ELL || ELLG
 	struct ellg_t ellg;
 #endif
-#if HLL || HLL_LOCAL
+#if HLL_SEQ || HLL || HLL_LOCAL
 	struct hll_t hll;
 #endif
 
@@ -346,11 +431,11 @@ int main(void)
 	std::cout << "-- INPUT FILE LOADED --" << std::endl << std::endl;
 	std::cout << "-- PRE-PROCESSING INPUT --" << std::endl;
 	COO_To_CSR(&coo, &csr, CSR_LOG);
-#if ELL || ELLG
+#if ELL_SEQ || ELL || ELLG
 	if(!CSR_To_ELLG(&csr, &ellg, ELLG_LOG))
 		std::cout << "ELL-G HAS BEEN TRUNCATED" << std::endl;
 #endif
-#if HLL || HLL_LOCAL
+#if HLL_SEQ || HLL || HLL_LOCAL
 	if (!CSR_To_HLL(&csr, &hll, HLL_LOG))
 		std::cout << "HLL HAS BEEN TRUNCATED" << std::endl;
 #endif
@@ -362,11 +447,11 @@ int main(void)
 	for (IndexType i = 0; i < n; i++)
 		x.push_back(i);
 
-#if ELL
-	std::cout << std::endl << "-- STARTING ELL KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y1 = spmv_ELL(&ellg, x);
-	std::cout << std::endl << "-- FINISHED ELL KERNEL OPERATION --" << std::endl << std::endl;
-	if (ELL_OUTPUT_LOG)
+#if ELL_SEQ
+	std::cout << std::endl << "-- STARTING ELL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y1 = spmv_ELL_sequential(&ellg, x);
+	std::cout << std::endl << "-- FINISHED ELL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (ELL_SEQ_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y1.size(); i++)
@@ -374,11 +459,11 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-#if ELLG
-	std::cout << std::endl << "-- STARTING ELL-G KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y2 = spmv_ELLG(&ellg, x);
-	std::cout << std::endl << "-- FINISHED ELL-G KERNEL OPERATION --" << std::endl << std::endl;
-	if (ELLG_OUTPUT_LOG)
+#if ELL
+	std::cout << std::endl << "-- STARTING ELL KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y2 = spmv_ELL(&ellg, x);
+	std::cout << std::endl << "-- FINISHED ELL KERNEL OPERATION --" << std::endl << std::endl;
+	if (ELL_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y2.size(); i++)
@@ -386,11 +471,11 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-#if HLL
-	std::cout << std::endl << "-- STARTING HLL KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y3 = spmv_HLL(&hll, x);
-	std::cout << std::endl << "-- FINISHED HLL KERNEL OPERATION --" << std::endl << std::endl;
-	if (HLL_OUTPUT_LOG)
+#if ELLG_SEQ
+	std::cout << std::endl << "-- STARTING ELL-G SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y3 = spmv_ELLG_sequential(&ellg, x);
+	std::cout << std::endl << "-- FINISHED ELL-G SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (ELLG_SEQ_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y3.size(); i++)
@@ -398,11 +483,11 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-#if HLL_LOCAL
-	std::cout << std::endl << "-- STARTING HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y4 = spmv_HLL_LOCAL(&hll, x);
-	std::cout << std::endl << "-- FINISHED HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
-	if (HLL_LOCAL_OUTPUT_LOG)
+#if ELLG
+	std::cout << std::endl << "-- STARTING ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y4 = spmv_ELLG(&ellg, x);
+	std::cout << std::endl << "-- FINISHED ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+	if (ELLG_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y4.size(); i++)
@@ -410,24 +495,69 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-
-	x.clear();
-#if ELL || ELLG
-	FreeELLG(&ellg);
-#if ELL
-	y1.clear();
+#if HLL_SEQ
+	std::cout << std::endl << "-- STARTING HLL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y5 = spmv_HLL_sequential(&hll, x);
+	std::cout << std::endl << "-- FINISHED HLL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (HLL_SEQ_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y5.size(); i++)
+			std::cout << y5[i] << " ";
+		std::cout << std::endl;
+	}
 #endif
-#if ELLG
-	y2.clear();
-#endif
-#endif
-#if HLL || HLL_LOCAL
-	FreeHLL(&hll);
 #if HLL
-	y3.clear();
+	std::cout << std::endl << "-- STARTING HLL KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y6 = spmv_HLL(&hll, x);
+	std::cout << std::endl << "-- FINISHED HLL KERNEL OPERATION --" << std::endl << std::endl;
+	if (HLL_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y6.size(); i++)
+			std::cout << y6[i] << " ";
+		std::cout << std::endl;
+	}
 #endif
 #if HLL_LOCAL
+	std::cout << std::endl << "-- STARTING HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y7 = spmv_HLL_LOCAL(&hll, x);
+	std::cout << std::endl << "-- FINISHED HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
+	if (HLL_LOCAL_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y7.size(); i++)
+			std::cout << y7[i] << " ";
+		std::cout << std::endl;
+	}
+#endif
+
+	x.clear();
+#if ELL_SEQ || ELL || ELLG_SEQ || ELLG
+	FreeELLG(&ellg);
+#if ELL_SEQ
+	y1.clear();
+#endif
+#if ELL
+	y2.clear();
+#endif
+#if ELLG_SEQ
+	y3.clear();
+#endif
+#if ELLG
 	y4.clear();
+#endif
+#endif
+#if HLL_SEQ || HLL || HLL_LOCAL
+	FreeHLL(&hll);
+#if HLL_SEQ
+	y5.clear();
+#endif
+#if HLL
+	y6.clear();
+#endif
+#if HLL_LOCAL
+	y7.clear();
 #endif
 #endif
 #if DEBUG

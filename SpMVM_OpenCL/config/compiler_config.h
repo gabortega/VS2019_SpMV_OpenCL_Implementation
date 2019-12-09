@@ -39,6 +39,8 @@
 //
 #define KERNEL_FOLDER "../kernels"
 //
+#define COO_KERNEL_FILE "COO_kernel.cl"
+#define GMVM_KERNEL_FILE "GMVM_kernel.cl"
 #define CSR_KERNEL_FILE "CSR_kernel.cl"
 #define JAD_KERNEL_FILE "JAD_kernel.cl"
 #define ELL_KERNEL_FILE "ELL_kernel.cl"
@@ -48,10 +50,6 @@
 #define DIA_KERNEL_FILE "DIA_kernel.cl"
 #define HDIA_KERNEL_FILE "HDIA_kernel.cl"
 #define HDIA_LOCAL_KERNEL_FILE "HDIA_LOCAL_kernel.cl"
-#define HYB_ELL_KERNEL_FILE "HYB_kernel.cl"
-#define HYB_ELLG_KERNEL_FILE "HYB_kernel.cl"
-#define HYB_HLL_KERNEL_FILE "HYB_kernel.cl"
-#define HYB_HLL_LOCAL_KERNEL_FILE "HYB_kernel.cl"
 //
 //#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048 !!! NO LONGER USED !!!
 #define WARP_SIZE 32
@@ -75,17 +73,37 @@
 #define CSR_WORKGROUP_SIZE 128 // default is 128
 //
 // Kernels to run (0: Off; 1: On)
+#define COO_SEQ 1
+#define COO 1
+//
+#define GMVM_SEQ 1
+#define GMVM 1
+//
+#define CSR_SEQ 1
 #define CSR 1
+//
+#define JAD_SEQ 1
 #define JAD 1
+//
+#define ELL_SEQ 1
 #define ELL 1
+#define ELLG_SEQ 1
 #define ELLG 1
+#define HLL_SEQ 1
 #define HLL 1
 #define HLL_LOCAL 1
+//
+#define DIA_SEQ 1
 #define DIA 1
+#define HDIA_SEQ 1
 #define HDIA 1
 #define HDIA_LOCAL 1
+//
+#define HYB_ELL_SEQ 1
 #define HYB_ELL 1
+#define HYB_ELLG_SEQ 1
 #define HYB_ELLG 1
+#define HYB_HLL_SEQ 1
 #define HYB_HLL 1
 #define HYB_HLL_LOCAL 1
 /*--------------------------------------------------*/
@@ -100,6 +118,8 @@
 //
 // Storage format-specific output folders
 //
+#define COO_OUTPUT_FOLDER "COO"
+#define GMVM_OUTPUT_FOLDER "GMVM"
 #define CSR_OUTPUT_FOLDER "CSR"
 #define JAD_OUTPUT_FOLDER "JAD"
 #define ELL_OUTPUT_FOLDER "ELL"
@@ -111,6 +131,7 @@
 //
 // Print out data about each storage format (WARNING: AVOID FOR VERY LARGE MATRICES!)
 #define COO_LOG 0
+#define MAT_LOG 0
 #define CSR_LOG 0
 #define JAD_LOG 0
 #define ELLG_LOG 0
@@ -121,20 +142,39 @@
 #define HYB_HLL_LOG 0
 //
 // Print out output data for each kernel
+#define COO_SEQ_OUTPUT_LOG 1
+#define COO_OUTPUT_LOG 1
+//
+#define GMVM_SEQ_OUTPUT_LOG 1
+#define GMVM_OUTPUT_LOG 1
+//
+#define CSR_SEQ_OUTPUT_LOG 1
 #define CSR_OUTPUT_LOG 1
+//
+#define JAD_SEQ_OUTPUT_LOG 1
 #define JAD_OUTPUT_LOG 1
+//
+#define ELL_SEQ_OUTPUT_LOG 1
 #define ELL_OUTPUT_LOG 1
+#define ELLG_SEQ_OUTPUT_LOG 1
 #define ELLG_OUTPUT_LOG 1
+#define HLL_SEQ_OUTPUT_LOG 1
 #define HLL_OUTPUT_LOG 1
 #define HLL_LOCAL_OUTPUT_LOG 1
+//
+#define DIA_SEQ_OUTPUT_LOG 1
 #define DIA_OUTPUT_LOG 1
+#define HDIA_SEQ_OUTPUT_LOG 1
 #define HDIA_OUTPUT_LOG 1
 #define HDIA_LOCAL_OUTPUT_LOG 1
+//
+#define HYB_ELL_SEQ_OUTPUT_LOG 1
 #define HYB_ELL_OUTPUT_LOG 1
+#define HYB_ELLG_SEQ_OUTPUT_LOG 1
 #define HYB_ELLG_OUTPUT_LOG 1
+#define HYB_HLL_SEQ_OUTPUT_LOG 1
 #define HYB_HLL_OUTPUT_LOG 1
 #define HYB_HLL_LOCAL_OUTPUT_LOG 1
 //
 /*--------------------------------------------------*/
-
 #endif

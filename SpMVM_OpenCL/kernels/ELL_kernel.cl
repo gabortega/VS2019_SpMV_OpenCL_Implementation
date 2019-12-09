@@ -8,7 +8,7 @@ __kernel void spmv_ell(
 {
 	__private unsigned int row_id = get_global_id(0);
 
-	__private unsigned int i, j, k;
+	__private unsigned int i, j;
 	__private double r;
 
 	if (row_id >= N_MATRIX) return;
@@ -18,8 +18,7 @@ __kernel void spmv_ell(
 	for (i = 0; i < NELL; i++)
 	{
 		j = i * STRIDE_MATRIX + row_id;
-		k = d_jcoeff[j];
-		r += d_a[j] * d_x[k];
+		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
 	dst_y[row_id] += r;
 }
@@ -34,7 +33,7 @@ __kernel void spmv_ell(
 {
 	__private unsigned int row_id = get_global_id(0);
 
-	__private unsigned int i, j, k;
+	__private unsigned int i, j;
 	__private float r;
 
 	if (row_id >= N_MATRIX) return;
@@ -44,8 +43,7 @@ __kernel void spmv_ell(
 	for (i = 0; i < NELL; i++)
 	{
 		j = i * STRIDE_MATRIX + row_id;
-		k = d_jcoeff[j];
-		r += d_a[j] * d_x[k];
+		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
 	dst_y[row_id] += r;
 }

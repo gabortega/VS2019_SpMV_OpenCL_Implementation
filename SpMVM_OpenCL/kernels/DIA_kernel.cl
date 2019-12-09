@@ -16,7 +16,7 @@ __kernel void spmv_dia(__private unsigned int ndiags,
 	__private unsigned int local_row_id = get_local_id(0);
 
 	__private unsigned int i;
-	__private int q;
+	__private long q;
 	__private double r;
 
 #pragma unroll
@@ -54,7 +54,7 @@ __kernel void spmv_dia(__private unsigned int ndiags,
 	__private unsigned int local_row_id = get_local_id(0);
 
 	__private unsigned int i;
-	__private int q;
+	__private long q;
 	__private float r;
 
 #pragma unroll

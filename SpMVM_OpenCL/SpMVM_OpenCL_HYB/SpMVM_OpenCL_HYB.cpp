@@ -1,6 +1,6 @@
 #include<compiler_config.h>
 
-#if HYB_ELL || HYB_ELLG || HYB_HLL || HYB_HLL_LOCAL
+#if HYB_ELL_SEQ || HYB_ELLG_SEQ || HYB_HLL_SEQ || HYB_ELL || HYB_ELLG || HYB_HLL || HYB_HLL_LOCAL
 
 #include<stdio.h>
 #include<string>
@@ -11,6 +11,10 @@
 #include<JC/util.hpp>
 #include<IO/mmio.h>
 #include<IO/convert_input.h>
+#include<SEQ/ELL.hpp>
+#include<SEQ/ELLG.hpp>
+#include<SEQ/HLL.hpp>
+#include<SEQ/CSR.hpp>
 
 #if PRECISION == 2
 #define CL_REAL cl_double
@@ -21,10 +25,46 @@
 //#define CL_REAL cl_half // TODO?
 #endif
 
-#define DIVIDE_INTO(x,y) ((x + y - 1)/y)
+#if HYB_ELL_SEQ
+std::vector<REAL> spmv_HYB_ELL_sequential(struct hybellg_t* d_hyb, const std::vector<REAL> d_x)
+{
+	//decrement all values
+	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]--;
+	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]--;
+	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
+	//
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = 0;
+		if (d_hyb->ellg.nnz > 0)
+		{
+			nanoseconds += ELL_sequential(&(d_hyb->ellg), d_x, dst_y);
+		}
+		if (d_hyb->csr.nnz > 0)
+		{
+			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
+		}
+		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz));
+	//increment all values
+	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
+	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
+	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]++;
+
+	return dst_y;
+}
+#endif
 
 #if HYB_ELL
-std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
 {	
 	//decrement all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]--;
@@ -163,13 +203,50 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz));
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz));
+	//increment all values
+	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
+	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
+	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]++;
 
+	return dst_y;
+}
+#endif
+
+#if HYB_ELLG_SEQ
+std::vector<REAL> spmv_HYB_ELLG_sequential(struct hybellg_t* d_hyb, const std::vector<REAL> d_x)
+{
+	//decrement all values
+	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]--;
+	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]--;
+	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
+	//
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = 0;
+		if (d_hyb->ellg.nnz > 0)
+		{
+			nanoseconds += ELLG_sequential(&(d_hyb->ellg), d_x, dst_y);
+		}
+		if (d_hyb->csr.nnz > 0)
+		{
+			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
+		}
+		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz));
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -180,7 +257,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(const struct hybellg_t* d_hyb, const std::vect
 #endif
 
 #if HYB_ELLG
-std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]--;
@@ -324,13 +401,12 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz));
 		total_nanoseconds += nanoseconds;
 	}
     queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
     double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
-
+	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz));
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -340,8 +416,48 @@ std::vector<CL_REAL> spmv_HYB_ELLG(const struct hybellg_t* d_hyb, const std::vec
 }
 #endif
 
+#if HYB_HLL_SEQ
+std::vector<REAL> spmv_HYB_HLL_sequential(struct hybhll_t* d_hyb, const std::vector<REAL> d_x)
+{
+	//decrement all values
+	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]--;
+	for (IndexType i = 0; i < d_hyb->hll.nhoff; i++) d_hyb->hll.hoff[i]--;
+	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]--;
+	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
+	//
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = 0;
+		if (d_hyb->hll.nnz > 0)
+		{
+			nanoseconds += HLL_sequential(&(d_hyb->hll), d_x, dst_y);
+		}
+		if (d_hyb->csr.nnz > 0)
+		{
+			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
+		}
+		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz));
+	//increment all values
+	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
+	for (IndexType i = 0; i < d_hyb->hll.nhoff; i++) d_hyb->hll.hoff[i]++;
+	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
+	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]++;
+
+	return dst_y;
+}
+#endif
+
 #if HYB_HLL
-std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_REAL> d_x)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]--;
@@ -492,13 +608,12 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz));
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
-
+	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz));
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->hll.nhoff; i++) d_hyb->hll.hoff[i]++;
@@ -510,7 +625,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(const struct hybhll_t* d_hyb, const std::vecto
 #endif
 
 #if HYB_HLL_LOCAL
-std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(struct hybhll_t* d_hyb, const std::vector<CL_REAL> d_x)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]--;
@@ -669,12 +784,12 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(const struct hybhll_t* d_hyb, const std:
 					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hyb->nnz) / (nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz));
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hyb->nnz) / (average_nanoseconds * 1e-9) / 1e9 << "GFLOP/s\n";
+	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz));
 
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
@@ -701,10 +816,10 @@ int main(void)
 	FILE* f;
 	struct coo_t coo;
 	struct csr_t csr;
-#if HYB_ELL || HYB_ELLG
+#if HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG
 	struct hybellg_t hyb_ellg;
 #endif
-#if HYB_HLL || HYB_HLL_LOCAL
+#if HYB_HLL_SEQ || HYB_HLL || HYB_HLL_LOCAL
 	struct hybhll_t hybhll_t;
 #endif
 
@@ -726,10 +841,10 @@ int main(void)
 	IndexType n = coo.n;
 	COO_To_CSR(&coo, &csr, CSR_LOG);
 	FreeCOO(&coo);
-#if HYB_ELL || HYB_ELLG
+#if HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG
 	CSR_To_HYBELLG(&csr, &hyb_ellg, HYB_ELLG_LOG);
 #endif
-#if HYB_HLL || HYB_HLL_LOCAL
+#if HYB_HLL_SEQ || HYB_HLL || HYB_HLL_LOCAL
 	CSR_To_HYBHLL(&csr, &hybhll_t, HYB_HLL_LOG);
 #endif
 	FreeCSR(&csr);
@@ -739,11 +854,11 @@ int main(void)
 	for (IndexType i = 0; i < n; i++)
 		x.push_back(i);
 
-#if HYB_ELL
-	std::cout << std::endl << "-- STARTING HYB_ELL KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y1 = spmv_HYB_ELL(&hyb_ellg, x);
-	std::cout << std::endl << "-- FINISHED HYB_ELL KERNEL OPERATION --" << std::endl << std::endl;
-	if (HYB_ELL_OUTPUT_LOG)
+#if HYB_ELL_SEQ
+	std::cout << std::endl << "-- STARTING HYB_ELL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y1 = spmv_HYB_ELL_sequential(&hyb_ellg, x);
+	std::cout << std::endl << "-- FINISHED HYB_ELL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (HYB_ELL_SEQ_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y1.size(); i++)
@@ -751,11 +866,11 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-#if HYB_ELLG
-	std::cout << std::endl << "-- STARTING HYB_ELL-G KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y2 = spmv_HYB_ELLG(&hyb_ellg, x);
-	std::cout << std::endl << "-- FINISHED HYB_ELL-G KERNEL OPERATION --" << std::endl << std::endl;
-	if (HYB_ELLG_OUTPUT_LOG)
+#if HYB_ELL
+	std::cout << std::endl << "-- STARTING HYB_ELL KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y2 = spmv_HYB_ELL(&hyb_ellg, x);
+	std::cout << std::endl << "-- FINISHED HYB_ELL KERNEL OPERATION --" << std::endl << std::endl;
+	if (HYB_ELL_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y2.size(); i++)
@@ -763,11 +878,11 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-#if HYB_HLL
-	std::cout << std::endl << "-- STARTING HYB_HLL KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y3 = spmv_HYB_HLL(&hybhll_t, x);
-	std::cout << std::endl << "-- FINISHED HYB_HLL KERNEL OPERATION --" << std::endl << std::endl;
-	if (HYB_HLL_OUTPUT_LOG)
+#if HYB_ELLG_SEQ
+	std::cout << std::endl << "-- STARTING HYB_ELL-G SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y3 = spmv_HYB_ELLG_sequential(&hyb_ellg, x);
+	std::cout << std::endl << "-- FINISHED HYB_ELL-G SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (HYB_ELLG_SEQ_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y3.size(); i++)
@@ -775,11 +890,11 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-#if HYB_HLL_LOCAL
-	std::cout << std::endl << "-- STARTING HYB_HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y4 = spmv_HYB_HLL_LOCAL(&hybhll_t, x);
-	std::cout << std::endl << "-- FINISHED HYB_HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
-	if (HYB_HLL_LOCAL_OUTPUT_LOG)
+#if HYB_ELLG
+	std::cout << std::endl << "-- STARTING HYB_ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y4 = spmv_HYB_ELLG(&hyb_ellg, x);
+	std::cout << std::endl << "-- FINISHED HYB_ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+	if (HYB_ELLG_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y4.size(); i++)
@@ -787,24 +902,69 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-
-	x.clear();
-#if HYB_ELL || HYB_ELLG
-	FreeHYBELLG(&hyb_ellg);
-#if HYB_ELL
-	y1.clear();
+#if HYB_HLL_SEQ
+	std::cout << std::endl << "-- STARTING HYB_HLL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y5 = spmv_HYB_HLL_sequential(&hybhll_t, x);
+	std::cout << std::endl << "-- FINISHED HYB_HLL SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (HYB_HLL_SEQ_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y5.size(); i++)
+			std::cout << y5[i] << " ";
+		std::cout << std::endl;
+	}
 #endif
-#if HYB_ELLG
-	y2.clear();
-#endif
-#endif
-#if HYB_HLL || HYB_HLL_LOCAL
-	FreeHYBHLL(&hybhll_t);
 #if HYB_HLL
-	y3.clear();
+	std::cout << std::endl << "-- STARTING HYB_HLL KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y6 = spmv_HYB_HLL(&hybhll_t, x);
+	std::cout << std::endl << "-- FINISHED HYB_HLL KERNEL OPERATION --" << std::endl << std::endl;
+	if (HYB_HLL_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y6.size(); i++)
+			std::cout << y6[i] << " ";
+		std::cout << std::endl;
+	}
 #endif
 #if HYB_HLL_LOCAL
+	std::cout << std::endl << "-- STARTING HYB_HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y7 = spmv_HYB_HLL_LOCAL(&hybhll_t, x);
+	std::cout << std::endl << "-- FINISHED HYB_HLL_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
+	if (HYB_HLL_LOCAL_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y7.size(); i++)
+			std::cout << y7[i] << " ";
+		std::cout << std::endl;
+	}
+#endif
+
+	x.clear();
+#if HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG
+	FreeHYBELLG(&hyb_ellg);
+#if HYB_ELL_SEQ
+	y1.clear();
+#endif
+#if HYB_ELL
+	y2.clear();
+#endif
+#if HYB_ELLG_SEQ
+	y3.clear();
+#endif
+#if HYB_ELLG
 	y4.clear();
+#endif
+#endif
+#if HYB_HLL_SEQ || HYB_HLL || HYB_HLL_LOCAL
+	FreeHYBHLL(&hybhll_t);
+#if HYB_HLL
+	y5.clear();
+#endif
+#if HYB_HLL
+	y6.clear();
+#endif
+#if HYB_HLL_LOCAL
+	y7.clear();
 #endif
 #endif
 #if DEBUG

@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{6D6CBE16-2244-4659-A4E4-AE309B0EBBFA}</ProjectGuid>
+    <ProjectGuid>{817B6858-D4AF-419B-B6B9-1CD359744DBB}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>SpMVMOpenCLJAD</RootNamespace>
+    <RootNamespace>SpMVMOpenCLGMVM</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -165,17 +165,17 @@
   <ItemGroup>
     <ClCompile Include="..\include\IO\convert_input.c" />
     <ClCompile Include="..\include\IO\mmio.c" />
-    <ClCompile Include="SpMVM_OpenCL_JAD.cpp" />
+    <ClCompile Include="SpMVM_OpenCL_GMVM.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\config\compiler_config.h" />
     <ClInclude Include="..\include\IO\convert_input.h" />
     <ClInclude Include="..\include\IO\mmio.h" />
-    <ClInclude Include="..\include\SEQ\JAD.hpp" />
+    <ClInclude Include="..\include\SEQ\GMVM.hpp" />
     <ClInclude Include="..\include\util_misc.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\kernels\JAD_kernel.cl" />
+    <None Include="..\kernels\GMVM_kernel.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

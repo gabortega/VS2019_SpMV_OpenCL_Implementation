@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{817B6858-D4AF-419B-B6B9-1CD359744DBB}</ProjectGuid>
+    <ProjectGuid>{14600BFB-9E7F-4CF7-88FF-D6B2CAD8D67A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>SpMVMOpenCLCOO</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
@@ -171,6 +171,7 @@
     <ClInclude Include="..\config\compiler_config.h" />
     <ClInclude Include="..\include\IO\convert_input.h" />
     <ClInclude Include="..\include\IO\mmio.h" />
+    <ClInclude Include="..\include\SEQ\COO.hpp" />
     <ClInclude Include="..\include\util_misc.hpp" />
   </ItemGroup>
   <ItemGroup>

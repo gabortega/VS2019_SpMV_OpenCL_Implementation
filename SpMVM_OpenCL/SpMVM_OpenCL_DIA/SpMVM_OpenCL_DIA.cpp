@@ -1,6 +1,6 @@
 #include<compiler_config.h>
 
-#if DIA || HDIA || HDIA_LOCAL
+#if DIA_SEQ || DIA || HDIA_SEQ || HDIA || HDIA_LOCAL
 
 #include<stdio.h>
 #include<string>
@@ -11,6 +11,8 @@
 #include<JC/util.hpp>
 #include<IO/mmio.h>
 #include<IO/convert_input.h>
+#include<SEQ/DIA.hpp>
+#include<SEQ/HDIA.hpp>
 
 #if PRECISION == 2
 #define CL_REAL cl_double
@@ -21,8 +23,29 @@
 //#define CL_REAL cl_half // TODO?
 #endif
 
+#if DIA_SEQ
+std::vector<REAL> spmv_DIA_sequential(struct dia_t* d_dia, const std::vector<REAL> d_x)
+{
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = DIA_sequential(d_dia, d_x, dst_y);
+		printRunInfo(r + 1, nanoseconds, (d_dia->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_dia->nnz));
+
+	return dst_y;
+}
+#endif
+
 #if DIA
-std::vector<CL_REAL> spmv_DIA(const struct dia_t* d_dia, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_x)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//
@@ -84,19 +107,40 @@ std::vector<CL_REAL> spmv_DIA(const struct dia_t* d_dia, const std::vector<CL_RE
 					cl::NDRange(jc::best_fit(d_dia->n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
 		}
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_dia->nnz) / (nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_dia->nnz));
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_dia->nnz) / (average_nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
+	printAverageRunInfo(average_nanoseconds, (d_dia->nnz));
+
+	return dst_y;
+}
+#endif
+
+#if HDIA_SEQ
+std::vector<REAL> spmv_HDIA_sequential(struct hdia_t* d_hdia, const std::vector<REAL> d_x)
+{
+	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	//
+	for (int r = 0; r < REPEAT; r++)
+	{
+		std::fill(dst_y.begin(), dst_y.end(), 0);
+		nanoseconds = HDIA_sequential(d_hdia, d_x, dst_y);
+		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz));
+		total_nanoseconds += nanoseconds;
+	}
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz));
 
 	return dst_y;
 }
 #endif
 
 #if HDIA
-std::vector<CL_REAL> spmv_HDIA(const struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//
@@ -155,19 +199,19 @@ std::vector<CL_REAL> spmv_HDIA(const struct hdia_t* d_hdia, const std::vector<CL
 				queue,
 				cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz));
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
+	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz));
 
 	return dst_y;
 }
 #endif
 
 #if HDIA_LOCAL
-std::vector<CL_REAL> spmv_HDIA_LOCAL(const struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HDIA_LOCAL(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//
@@ -233,12 +277,12 @@ std::vector<CL_REAL> spmv_HDIA_LOCAL(const struct hdia_t* d_hdia, const std::vec
 				queue,
 				cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
-		std::cout << "Run: " << r + 1 << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << 2 * (d_hdia->nnz) / (nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
+		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz));
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << 2 * (d_hdia->nnz) / (average_nanoseconds * 1e9) / 1e9 << "GFLOP/s\n";
+	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz));
 
 	return dst_y;
 }
@@ -265,10 +309,10 @@ int main(void)
 	FILE* f;
 	struct coo_t coo;
 	struct csr_t csr;
-#if DIA
+#if DIA_SEQ || DIA
 	struct dia_t dia;
 #endif
-#if HDIA || HDIA_LOCAL
+#if HDIA_SEQ || HDIA || HDIA_LOCAL
 	struct hdia_t hdia;
 #endif
 
@@ -289,11 +333,11 @@ int main(void)
 	std::cout << "-- INPUT FILE LOADED --" << std::endl << std::endl;
 	std::cout << "-- PRE-PROCESSING INPUT --" << std::endl;
 	COO_To_CSR(&coo, &csr, CSR_LOG);
-#if DIA
+#if DIA_SEQ || DIA
 	if (!CSR_To_DIA(&csr, &dia, DIA_LOG))
 		std::cout << "DIA IS INCOMPLETE" << std::endl;
 #endif
-#if HDIA || HDIA_LOCAL
+#if HDIA_SEQ || HDIA || HDIA_LOCAL
 	if(!CSR_To_HDIA(&csr, &hdia, HDIA_LOG))
 		std::cout << "HDIA IS INCOMPLETE" << std::endl;
 #endif
@@ -305,11 +349,11 @@ int main(void)
 	for (IndexType i = 0; i < n; i++)
 		x.push_back(i);
 
-#if DIA
-	std::cout << std::endl << "-- STARTING DIA KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y1 = spmv_DIA(&dia, x);
-	std::cout << std::endl << "-- FINISHED DIA KERNEL OPERATION --" << std::endl << std::endl;
-	if (DIA_OUTPUT_LOG)
+#if DIA_SEQ
+	std::cout << std::endl << "-- STARTING DIA SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y1 = spmv_DIA_sequential(&dia, x);
+	std::cout << std::endl << "-- FINISHED DIA SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (DIA_SEQ_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y1.size(); i++)
@@ -317,43 +361,75 @@ int main(void)
 		std::cout << std::endl;
 	}
 #endif
-#if HDIA
-	std::cout << std::endl << "-- STARTING HDIA KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y2 = spmv_HDIA(&hdia, x);
-	std::cout << std::endl << "-- FINISHED HDIA KERNEL OPERATION --" << std::endl << std::endl;
-	if (HDIA_OUTPUT_LOG)
+#if DIA
+	std::cout << std::endl << "-- STARTING DIA KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y2 = spmv_DIA(&dia, x);
+	std::cout << std::endl << "-- FINISHED DIA KERNEL OPERATION --" << std::endl << std::endl;
+	if (DIA_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y2.size(); i++)
 			std::cout << y2[i] << " ";
+		std::cout << std::endl;
+	}
+#endif
+#if HDIA_SEQ
+	std::cout << std::endl << "-- STARTING HDIA SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y3 = spmv_HDIA_sequential(&hdia, x);
+	std::cout << std::endl << "-- FINISHED HDIA SEQUENTIAL OPERATION --" << std::endl << std::endl;
+	if (HDIA_SEQ_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y3.size(); i++)
+			std::cout << y3[i] << " ";
+	}
+	std::cout << std::endl;
+#endif
+#if HDIA
+	std::cout << std::endl << "-- STARTING HDIA KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y4 = spmv_HDIA(&hdia, x);
+	std::cout << std::endl << "-- FINISHED HDIA KERNEL OPERATION --" << std::endl << std::endl;
+	if (HDIA_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y4.size(); i++)
+			std::cout << y4[i] << " ";
 	}
 	std::cout << std::endl;
 #endif
 #if HDIA_LOCAL
 	std::cout << std::endl << "-- STARTING HDIA_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y3 = spmv_HDIA_LOCAL(&hdia, x);
+	std::vector<CL_REAL> y5 = spmv_HDIA_LOCAL(&hdia, x);
 	std::cout << std::endl << "-- FINISHED HDIA_LOCAL KERNEL OPERATION --" << std::endl << std::endl;
 	if (HDIA_LOCAL_OUTPUT_LOG)
 	{
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
-		for (IndexType i = 0; i < y3.size(); i++)
-			std::cout << y3[i] << " ";
+		for (IndexType i = 0; i < y5.size(); i++)
+			std::cout << y5[i] << " ";
 		std::cout << std::endl;
 	}
 #endif
 
 	x.clear();
-#if DIA
+#if DIA_SEQ || DIA
 	FreeDIA(&dia);
+#if DIA_SEQ
 	y1.clear();
 #endif
-#if HDIA || HDIA_LOCAL
-	FreeHDIA(&hdia);
-#if HDIA
+#if DIA
 	y2.clear();
 #endif
-#if HDIA_LOCAL
+#endif
+#if HDIA_SEQ || HDIA || HDIA_LOCAL
+	FreeHDIA(&hdia);
+#if HDIA_SEQ
 	y3.clear();
+#endif
+#if HDIA
+	y4.clear();
+#endif
+#if HDIA_LOCAL
+	y5.clear();
 #endif
 #endif
 #if DEBUG

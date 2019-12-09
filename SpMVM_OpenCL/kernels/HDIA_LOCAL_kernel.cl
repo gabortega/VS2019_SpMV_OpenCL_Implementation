@@ -33,7 +33,7 @@ __kernel void spmv_hdia_local(
 	__private unsigned int row_hoff = sharedhoff[row_local_hack_id + 2 * sharedhoff_size];
 
 	__private unsigned int i;
-	__private int q;
+	__private long q;
 	__private double r;
 
 	if (row_id >= N_MATRIX) return;
@@ -83,7 +83,7 @@ __kernel void spmv_hdia_local(
 	__private unsigned int row_hoff = sharedhoff[row_local_hack_id + 2 * sharedhoff_size];
 
 	__private unsigned int i;
-	__private int q;
+	__private long q;
 	__private float r;
 
 	if (row_id >= N_MATRIX) return;

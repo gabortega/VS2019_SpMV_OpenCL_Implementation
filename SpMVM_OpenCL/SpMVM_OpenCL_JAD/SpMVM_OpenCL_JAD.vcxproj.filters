@@ -25,6 +25,9 @@
     <Filter Include="Header Files\compiler_config">
       <UniqueIdentifier>{f32d1dc5-020e-40e8-8390-7ef114a901f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\SEQ">
+      <UniqueIdentifier>{ea1ce2c5-2956-478b-8b0c-84104b15a130}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SpMVM_OpenCL_JAD.cpp">
@@ -49,6 +52,9 @@
     </ClInclude>
     <ClInclude Include="..\include\util_misc.hpp">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\SEQ\JAD.hpp">
+      <Filter>Header Files\SEQ</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

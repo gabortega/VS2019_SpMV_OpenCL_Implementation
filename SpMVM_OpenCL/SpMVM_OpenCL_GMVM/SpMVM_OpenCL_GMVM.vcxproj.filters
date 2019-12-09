@@ -26,18 +26,18 @@
       <UniqueIdentifier>{f32d1dc5-020e-40e8-8390-7ef114a901f9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\SEQ">
-      <UniqueIdentifier>{7fc1d39f-a811-4e18-b291-421a19202eaf}</UniqueIdentifier>
+      <UniqueIdentifier>{99f55de0-7a55-4090-b97e-0669c7d14f94}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="SpMVM_OpenCL_GMVM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\include\IO\mmio.c">
       <Filter>Source Files\IO</Filter>
     </ClCompile>
     <ClCompile Include="..\include\IO\convert_input.c">
       <Filter>Source Files\IO</Filter>
-    </ClCompile>
-    <ClCompile Include="SpMVM_OpenCL_DIA.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -53,21 +53,12 @@
     <ClInclude Include="..\include\util_misc.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\SEQ\DIA.hpp">
-      <Filter>Header Files\SEQ</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\SEQ\HDIA.hpp">
+    <ClInclude Include="..\include\SEQ\GMVM.hpp">
       <Filter>Header Files\SEQ</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\kernels\DIA_kernel.cl">
-      <Filter>Source Files\kernel</Filter>
-    </None>
-    <None Include="..\kernels\HDIA_kernel.cl">
-      <Filter>Source Files\kernel</Filter>
-    </None>
-    <None Include="..\kernels\HDIA_LOCAL_kernel.cl">
+    <None Include="..\kernels\GMVM_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
   </ItemGroup>
