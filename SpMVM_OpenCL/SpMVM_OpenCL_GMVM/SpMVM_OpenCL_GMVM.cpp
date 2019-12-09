@@ -55,6 +55,8 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DN_MATRIX=" + std::to_string(d_mat->n) +
+						" -DNN_MATRIX=" + std::to_string(d_mat->n * d_mat->n) +
+						" -DN_WORKGROUPS=" + std::to_string((d_mat->n + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) +
 						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
 	//
 	cl::Program program =

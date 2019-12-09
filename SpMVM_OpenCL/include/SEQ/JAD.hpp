@@ -19,8 +19,8 @@ unsigned long JAD_sequential(struct jad_t* d_jad, std::vector<REAL> d_x, std::ve
 	//
 	for (IndexType i = 0, j = 0; j < d_jad->njad[d_jad->n]; j++)
 	{
-		IndexType p = d_jad->ia[j], q = d_jad->ia[j + 1];
-		for (i = 0; ((i + p) < q) && (i < d_jad->n); i++)
+		IndexType p = d_jad->ia[j];
+		for (i = 0; (i < d_jad->n) && d_jad->njad[d_jad->perm[i]] > j; i++)
 		{
 			dst_y[d_jad->perm[i]] += d_jad->a[i + p] * d_x[d_jad->ja[i + p]];
 		}

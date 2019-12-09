@@ -39,7 +39,7 @@ __kernel void spmv_hdia_local(
 	if (row_id >= N_MATRIX) return;
 
 	r = 0.0;
-#pragma unroll
+#pragma unroll(UNROLL)
 	for (i = 0; i < ndiags; i++)
 	{
 		q = d_ioff[row_hoff + i] + row_id;

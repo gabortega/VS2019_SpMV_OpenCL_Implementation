@@ -16,7 +16,7 @@ __kernel void spmv_ellg(
 	if (row_id >= N_MATRIX) return;
 
 	r = 0.0;
-#pragma unroll
+#pragma unroll(5)
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * STRIDE_MATRIX + row_id;
@@ -43,7 +43,7 @@ __kernel void spmv_ellg(
 	if (row_id >= N_MATRIX) return;
 
 	r = 0.0;
-#pragma unroll
+#pragma unroll(5)
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * STRIDE_MATRIX + row_id;

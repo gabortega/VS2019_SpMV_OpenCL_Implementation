@@ -112,7 +112,7 @@
 //            Input/Output related
 //
 #define INPUT_FOLDER "../input"
-#define INPUT_FILE "psmigr_1.mtx"
+#define INPUT_FILE "sherman3.mtx"
 //
 #define OUTPUT_FOLDER "../output"
 //

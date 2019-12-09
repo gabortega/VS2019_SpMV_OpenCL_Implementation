@@ -71,7 +71,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]--;
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
 	//
-	IndexType i, row_len = 0, coop, repeat = 1, nworkgroups;
+	IndexType i, row_len = 0, coop = 1, repeat = 1, nworkgroups;
 	if (d_hyb->csr.nnz > 0)
 	{
 		for (i = 0; i < d_hyb->csr.n; i++) row_len += d_hyb->csr.ia[i + 1] - d_hyb->csr.ia[i];
@@ -93,6 +93,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
 	std::string ell_macro = "-DPRECISION=" + std::to_string(PRECISION) + 
 							" -DNELL=" + std::to_string(*(d_hyb->ellg.nell + d_hyb->ellg.n)) +
@@ -106,6 +107,9 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 	cl::Program program_ell =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, ell_macro.c_str());
 	cl::Kernel kernel_ell{ program_ell, "spmv_ell" };
+	//
+	std::cout << "CSR kernel macros: " << csr_macro << std::endl << std::endl;
+	std::cout << "ELL kernel macros: " << ell_macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -264,7 +268,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]--;
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
 	//
-	IndexType i, row_len = 0, coop, repeat = 1, nworkgroups;
+	IndexType i, row_len = 0, coop = 1, repeat = 1, nworkgroups;
 	if (d_hyb->csr.nnz > 0)
 	{
 		for (i = 0; i < d_hyb->csr.n; i++) row_len += d_hyb->csr.ia[i + 1] - d_hyb->csr.ia[i];
@@ -286,6 +290,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
 	std::string ellg_macro = "-DPRECISION=" + std::to_string(PRECISION) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
@@ -298,6 +303,9 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 	cl::Program program_ellg =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, ellg_macro.c_str());
 	cl::Kernel kernel_ellg{ program_ellg, "spmv_ellg" };
+	//
+	std::cout << "CSR kernel macros: " << csr_macro << std::endl << std::endl;
+	std::cout << "ELL-G kernel macros: " << ellg_macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -465,7 +473,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]--;
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
 	//
-	IndexType i, row_len = 0, coop, repeat = 1, nworkgroups;
+	IndexType i, row_len = 0, coop = 1, repeat = 1, nworkgroups;
 	if (d_hyb->csr.nnz > 0)
 	{
 		for (i = 0; i < d_hyb->csr.n; i++) row_len += d_hyb->csr.ia[i + 1] - d_hyb->csr.ia[i];
@@ -483,14 +491,19 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	IndexType unroll_val;
+	for (unroll_val = 1; (*(d_hyb->hll.nell + d_hyb->hll.nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	//
 	//Macros
 	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
 	std::string hll_macro = "-DPRECISION=" + std::to_string(PRECISION) +
 							" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
-							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n);
+							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n) +
+							" -DUNROLL=" + std::to_string(unroll_val);
 	//
 	cl::Program program_csr =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, csr_macro.c_str());
@@ -499,6 +512,9 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 	cl::Program program_hll =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, hll_macro.c_str());
 	cl::Kernel kernel_hll{ program_hll, "spmv_hll" };
+	//
+	std::cout << "CSR kernel macros: " << csr_macro << std::endl << std::endl;
+	std::cout << "HLL kernel macros: " << hll_macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -633,7 +649,7 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(struct hybhll_t* d_hyb, const std::vecto
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]--;
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
 	//
-	IndexType i, row_len = 0, coop, repeat = 1, nworkgroups;
+	IndexType i, row_len = 0, coop = 1, repeat = 1, nworkgroups;
 	if (d_hyb->csr.nnz > 0)
 	{
 		for (i = 0; i < d_hyb->csr.n; i++) row_len += d_hyb->csr.ia[i + 1] - d_hyb->csr.ia[i];
@@ -651,14 +667,19 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(struct hybhll_t* d_hyb, const std::vecto
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	IndexType unroll_val;
+	for (unroll_val = 1; (*(d_hyb->hll.nell + d_hyb->hll.nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	//
 	//Macros
 	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
+							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
 	std::string hll_macro = "-DPRECISION=" + std::to_string(PRECISION) +
 							" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
-							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n);
+							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n) +
+							" -DUNROLL=" + std::to_string(unroll_val);
 	//
 	cl::Program program_csr =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, csr_macro.c_str());
@@ -667,6 +688,9 @@ std::vector<CL_REAL> spmv_HYB_HLL_LOCAL(struct hybhll_t* d_hyb, const std::vecto
 	cl::Program program_hll_local =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_LOCAL_KERNEL_FILE, context, device, hll_macro.c_str());
 	cl::Kernel kernel_hll_local{ program_hll_local, "spmv_hll_local" };
+	//
+	std::cout << "CSR kernel macros: " << csr_macro << std::endl << std::endl;
+	std::cout << "HLL LOCAL kernel macros: " << hll_macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);

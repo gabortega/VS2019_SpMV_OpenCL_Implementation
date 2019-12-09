@@ -66,12 +66,16 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DN_MATRIX=" + std::to_string(d_jad->n) +
+						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NJAD_PER_WG - 1)/ MAX_NJAD_PER_WG) + 1) +
 						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + JAD_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_jad" };
 	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	//
+	size_t byte_size_d_njad = d_jad->n * sizeof(cl_uint);
 	size_t byte_size_d_ia = (d_jad->njad[d_jad->n] + 1) * sizeof(cl_uint);
 	size_t byte_size_d_ja = d_jad->total * sizeof(cl_uint);
 	size_t byte_size_d_a = d_jad->total * sizeof(CL_REAL);
@@ -79,6 +83,7 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
 	//
+	cl::Buffer d_njad_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_njad };
 	cl::Buffer d_ia_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_ia };
 	cl::Buffer d_ja_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_ja };
 	cl::Buffer d_a_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_a };
@@ -91,19 +96,21 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	//
 	size_t local_byte_size_shia = MAX_NJAD_PER_WG * sizeof(cl_uint);
 	//
+	queue.enqueueWriteBuffer(d_njad_buffer, CL_TRUE, 0, byte_size_d_njad, d_jad->njad);
 	queue.enqueueWriteBuffer(d_ia_buffer, CL_TRUE, 0, byte_size_d_ia, d_jad->ia);
 	queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_jad->ja);
 	queue.enqueueWriteBuffer(d_a_buffer, CL_TRUE, 0, byte_size_d_a, d_jad->a);
 	queue.enqueueWriteBuffer(d_perm_buffer, CL_TRUE, 0, byte_size_d_perm, d_jad->perm);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(1, d_ia_buffer);
-	kernel.setArg(2, d_ja_buffer);
-	kernel.setArg(3, d_a_buffer);
-	kernel.setArg(4, d_perm_buffer);
-	kernel.setArg(5, d_x_buffer);
-	kernel.setArg(6, dst_y_buffer);
-	kernel.setArg(7, cl::Local(local_byte_size_shia));
+	kernel.setArg(1, d_njad_buffer);
+	kernel.setArg(2, d_ia_buffer);
+	kernel.setArg(3, d_ja_buffer);
+	kernel.setArg(4, d_a_buffer);
+	kernel.setArg(5, d_perm_buffer);
+	kernel.setArg(6, d_x_buffer);
+	kernel.setArg(7, dst_y_buffer);
+	kernel.setArg(8, cl::Local(local_byte_size_shia));
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -116,7 +123,7 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 		for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += MAX_NJAD_PER_WG)
 		{
 			kernel.setArg(0, min(*(d_jad->njad + d_jad->n) - i, MAX_NJAD_PER_WG)); // set njad for this iteration
-			kernel.setArg(8, i);
+			kernel.setArg(9, i);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,

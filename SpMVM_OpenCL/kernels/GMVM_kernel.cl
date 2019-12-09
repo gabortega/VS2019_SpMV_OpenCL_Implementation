@@ -11,24 +11,30 @@ __kernel void spmv_gmvm(
 {
 	__private unsigned int global_id = get_global_id(0);
 	__private unsigned int local_id = get_local_id(0);
-	__private unsigned int i, j;
+	__private unsigned int i, j, q;
 
 	__private double r = 0.0;
 
-#pragma unroll
-	for (i = 0; i < ((N_MATRIX + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE); i++)
+	q = local_id;
+#pragma unroll(1)
+	for (i = 0; i < N_WORKGROUPS; q = ((++i) * WORKGROUP_SIZE + local_id))
 	{
-		if ((i * WORKGROUP_SIZE + local_id) < N_MATRIX)
-			sharedx[local_id] = d_x[local_id + i * WORKGROUP_SIZE];
+		if (q < N_MATRIX)
+			sharedx[local_id] = d_x[q];
 		else
 			sharedx[local_id] = 0.0f;
 		barrier(CLK_LOCAL_MEM_FENCE);
 
+		q = global_id + (WORKGROUP_SIZE * i) * N_MATRIX;
+#if WORKGROUP_SIZE >= 32
+#pragma unroll(32)
+#else
 #pragma unroll
-		for (j = 0; j < WORKGROUP_SIZE; j++)
+#endif
+		for (j = 0; j < WORKGROUP_SIZE; q = global_id + (++j + WORKGROUP_SIZE * i) * N_MATRIX)
 		{
-			if (global_id + (j + WORKGROUP_SIZE * i) * N_MATRIX < N_MATRIX * N_MATRIX)
-			r += d_val[global_id + (j + WORKGROUP_SIZE * i) * N_MATRIX] * sharedx[j];
+			if (q < NN_MATRIX)
+				r += d_val[q] * sharedx[j];
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
 	}
@@ -51,20 +57,26 @@ __kernel void spmv_gmvm(
 
 	__private float r = 0.0;
 
-#pragma unroll
-	for (i = 0; i < ((N_MATRIX + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE); i++)
+	q = local_id;
+#pragma unroll(1)
+	for (i = 0; i < N_WORKGROUPS; q = ((++i) * WORKGROUP_SIZE + local_id))
 	{
-		if ((i * WORKGROUP_SIZE + local_id) < N_MATRIX)
-			sharedx[local_id] = d_x[local_id + i * WORKGROUP_SIZE];
+		if (q < N_MATRIX)
+			sharedx[local_id] = d_x[q];
 		else
 			sharedx[local_id] = 0.0f;
 		barrier(CLK_LOCAL_MEM_FENCE);
 
+		q = global_id + (WORKGROUP_SIZE * i) * N_MATRIX;
+#if WORKGROUP_SIZE >= 32
+#pragma unroll(32)
+#else
 #pragma unroll
-		for (j = 0; j < WORKGROUP_SIZE; j++)
+#endif
+		for (j = 0; j < WORKGROUP_SIZE; q = global_id + (++j + WORKGROUP_SIZE * i) * N_MATRIX)
 		{
-			if (global_id + (j + WORKGROUP_SIZE * i) * N_MATRIX < N_MATRIX * N_MATRIX)
-				r += d_val[global_id + (j + WORKGROUP_SIZE * i) * N_MATRIX] * sharedx[j];
+			if (q < NN_MATRIX)
+				r += d_val[q] * sharedx[j];
 		}
 		barrier(CLK_LOCAL_MEM_FENCE);
 	}

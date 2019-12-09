@@ -32,7 +32,7 @@ __kernel void spmv_hll_local(
 	__private double r;
 
 	r = 0.0;
-#pragma unroll
+#pragma unroll(UNROLL)
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
@@ -75,7 +75,7 @@ __kernel void spmv_hll_local(
 	__private float r;
 
 	r = 0.0;
-#pragma unroll
+#pragma unroll(UNROLL)
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;

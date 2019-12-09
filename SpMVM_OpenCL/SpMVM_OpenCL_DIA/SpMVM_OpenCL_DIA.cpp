@@ -57,11 +57,14 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DN_MATRIX=" + std::to_string(d_dia->n) +
 						" -DSTRIDE_MATRIX=" + std::to_string(d_dia->stride) +
-						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
+						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
+						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + DIA_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_dia" };
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_ioff = d_dia->ndiags * sizeof(cl_int);
 	size_t byte_size_d_diags = d_dia->stride * d_dia->ndiags * sizeof(CL_REAL);
@@ -148,14 +151,20 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	IndexType unroll_val;
+	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	//
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DN_MATRIX=" + std::to_string(d_hdia->n) +
-						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE);
+						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
+						" -DUNROLL=" + std::to_string(unroll_val);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_hdia" };
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);
@@ -219,14 +228,20 @@ std::vector<CL_REAL> spmv_HDIA_LOCAL(struct hdia_t* d_hdia, const std::vector<CL
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	IndexType unroll_val;
+	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	//
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DN_MATRIX=" + std::to_string(d_hdia->n) +
-						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE);
+						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
+						" -DUNROLL=" + std::to_string(unroll_val);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_LOCAL_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_hdia_local" };
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);

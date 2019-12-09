@@ -190,16 +190,18 @@ void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log)
 	IndexType n = jad->n = csr->n;
 	jad->nnz = csr->nnz;
 	jad->total = csr->nnz;
-	jad->njad = (IndexType*)malloc((csr->n + 1) * sizeof(IndexType));
+	jad->njad = (IndexType*)malloc((csr->n + 2) * sizeof(IndexType));
 	jad->ia = (IndexType*)malloc((csr->n + 1) * sizeof(IndexType));
 	jad->ja = (IndexType*)malloc(csr->nnz * sizeof(IndexType));
 	jad->a = (REAL*)malloc(csr->nnz * sizeof(REAL));
 	jad->perm = (IndexType*)malloc(csr->n * sizeof(IndexType));
 	// CSR -> JAD (taken from SpMV Fortran code)
-	IndexType ilo, j, len, k, i, k0, k1, jj;
+	IndexType j, len, k, i, k0, k1, jj;
+	long ilo;
 	//
 	for (i = 0; i < jad->n + 1; i++)
 		*(jad->njad + i) = 0;
+	*(jad->njad + jad->n + 1) = n;
 	//
 	ilo = jad->n;
 	//
@@ -211,9 +213,10 @@ void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log)
 		*(jad->njad + n) = max(*(jad->njad + n), len);
 		*(jad->njad + j) = len;
 	}
+	*(jad->njad + n + 1) = ilo;
 	//
-	long* work_array = (long*)malloc((csr->n + 1) * sizeof(long));
-	dcsort(jad->njad, jad->n, work_array, jad->perm, ilo, *(jad->njad + n));
+	long* work_array = (long*)calloc((csr->n + 1), sizeof(long));
+	dcsort(jad->njad, jad->n, work_array, jad->perm, (long)*(jad->njad + n + 1), (long)*(jad->njad + n));
 	free(work_array);
 	//
 	for (j = 0; j < jad->n; j++)
@@ -253,7 +256,7 @@ void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log)
 	{
 		fprintf(stdout, "JAD: Matrix N = %d, NNZ = %d\n", jad->n, jad->nnz);
 		fprintf(stdout, "jad->njad: ");
-		for (IndexType i = 0; i < n + 1; i++)
+		for (IndexType i = 0; i < n + 2; i++)
 			fprintf(stdout, "%d ", jad->njad[i]);
 		fprintf(stdout, "\n");
 
@@ -281,7 +284,7 @@ void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log)
 
 /*--------------------------------------------------*/
 /* distribution count sort subroutine (taken from SpMV Fortran code) */
-void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, IndexType ilo, IndexType ihi)
+void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, long ilo, long ihi)
 {
 	long i, j, ivalj;
 	//
@@ -290,8 +293,11 @@ void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, IndexTyp
 	//
 	for (i = 0; i < n; i++)
 	{
-		if (*(ival + i) - 1 > ilo - 2 && *(ival + i) - 1 < ihi)
+		if ((long)*(ival + i) - 1 > ilo - 2 && (long)*(ival + i) - 1 < ihi)
+		{
 			*(icnt + *(ival + i) - 1) = *(icnt + *(ival + i) - 1) + 1;
+		}
+			
 	}
 	//
 	for (i = ihi - 2; i > ilo - 2; i--)
@@ -302,7 +308,7 @@ void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, IndexTyp
 	//
 	for (j = n - 1; j > -1; j--)
 	{
-		ivalj = *(ival + j) - 1;
+		ivalj = (long)*(ival + j) - 1;
 		if (ivalj > ilo - 2 && ivalj < ihi)
 			*(index + *(icnt + ivalj) - 1) = j;
 		if (ivalj > ilo - 2 && ivalj < ihi)
@@ -357,7 +363,7 @@ int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log)
 	IndexType n = ellg->n = csr->n, lenmax = 0, nnz = 0;
 	/*------------ pad each diag to be multiple of the WARP_SIZE */
 	ellg->stride = (n + WARP_SIZE - 1) / WARP_SIZE * WARP_SIZE;
-	ellg->nell = (IndexType*)malloc((n + 1) * sizeof(IndexType));
+	ellg->nell = (IndexType*)malloc((n + 2) * sizeof(IndexType));
 	ellg->jcoeff = (IndexType*)malloc(MAX_ELLG * ellg->stride * sizeof(IndexType));
 	ellg->a = (REAL*)malloc(MAX_ELLG * ellg->stride * sizeof(REAL));
 	// CSR -> ELLG (based off ELL code)
@@ -374,6 +380,7 @@ int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log)
 	//
 	for (i = 0; i < ellg->n + 1; i++)
 		*(ellg->nell + i) = 0;
+	*(ellg->nell + ellg->n + 1) = n;
 	//
 	// Determine most non-zero elements in a single row
 	for (j = 0; j < ellg->n; j++)
@@ -381,6 +388,7 @@ int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log)
 		lenmax = max(*(csr->ia + j + 1) - *(csr->ia + j), lenmax);
 		*(ellg->nell + j) = min(*(csr->ia + j + 1) - *(csr->ia + j), MAX_ELLG);
 		*(ellg->nell + n) = max(*(ellg->nell + n), *(ellg->nell + j));
+		*(ellg->nell + n + 1) = min(*(ellg->nell + n + 1), *(ellg->nell + j));
 	}
 	//
 	for (jj = 0; jj < ellg->n; jj++)
@@ -407,7 +415,7 @@ int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log)
 		fprintf(stdout, "ELL-G: Matrix N = %d, NNZ = %d\n", ellg->n, ellg->nnz);
 
 		fprintf(stdout, "ellg->nell: ");
-		for (IndexType i = 0; i < ellg->n + 1; i++)
+		for (IndexType i = 0; i < ellg->n + 2; i++)
 			fprintf(stdout, "%d ", ellg->nell[i]);
 		fprintf(stdout, "\n");
 
@@ -438,7 +446,7 @@ int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log)
 	IndexType n = hll->n = csr->n, lenmax = 0, nnz = 0;
 	IndexType hoff_size = hll->nhoff = (((n + HLL_HACKSIZE - 1) / HLL_HACKSIZE) + 1);
 	/*------------ pad each diag to be multiple of the WARP_SIZE */
-	hll->nell = (IndexType*)malloc(hoff_size * sizeof(IndexType));
+	hll->nell = (IndexType*)malloc((hoff_size + 1) * sizeof(IndexType));
 	hll->stride = (n + WARP_SIZE - 1) / WARP_SIZE * WARP_SIZE;
 	hll->jcoeff = (IndexType*)malloc(MAX_HLL * hll->stride * sizeof(IndexType));
 	hll->hoff = (IndexType*)malloc(hoff_size * sizeof(unsigned IndexType));
@@ -457,6 +465,7 @@ int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log)
 	//
 	for (i = 0; i < hoff_size; i++)
 		*(hll->nell + i) = 0;
+	*(hll->nell + hoff_size) = n;
 	//
 	*(hll->hoff + 0) = 1;
 	//
@@ -489,6 +498,8 @@ int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log)
 		}
 		*(hll->hoff + hack + 1) = *(hll->hoff + hack) + *(hll->nell + hack) * HLL_HACKSIZE;
 	}
+	for (i = 0; i < hoff_size; i++)
+		*(hll->nell + hoff_size) = min(*(hll->nell + hoff_size), *(hll->nell + i));
 
 	IndexType total_mem = 0;
 	for (i = 0; i < hoff_size - 1; i++)
@@ -502,7 +513,7 @@ int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log)
 	{
 		fprintf(stdout, "HLL: Matrix N = %d, NNZ = %d, Memory = %d Units\n", hll->n, hll->nnz, total_mem);
 		fprintf(stdout, "hll->nell: ");
-		for (IndexType i = 0; i < hoff_size; i++)
+		for (IndexType i = 0; i < hoff_size + 1; i++)
 			fprintf(stdout, "%d ", hll->nell[i]);
 		fprintf(stdout, "\n");
 

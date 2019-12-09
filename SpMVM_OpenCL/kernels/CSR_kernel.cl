@@ -27,12 +27,14 @@ __kernel void spmv_csr(
 		{
 			// do multiplication
 			row_ptr = d_ia[thread_id];
+#pragma unroll(1)
 			for (j = coop_id; j < d_ia[thread_id + 1] - row_ptr; j += CSR_COOP)
 			{
 				r += d_a[row_ptr + j] * d_x[d_ja[row_ptr + j]];
 			}
 			// do reduction in shared mem
 			shareddata[local_row_id] = r;
+#pragma unroll(UNROLL_SHARED)
 			for (s = CSR_COOP / 2; s > 0; s >>= 1) 
 			{
 				if (coop_id < s) shareddata[local_row_id] += shareddata[local_row_id + s];
@@ -68,18 +70,18 @@ __kernel void spmv_csr(
 		{
 			// do multiplication
 			row_ptr = d_ia[thread_id];
-			__attribute__((opencl_unroll_hint))
-				for (j = coop_id; j < d_ia[thread_id + 1] - row_ptr; j += CSR_COOP)
-				{
-					r += d_a[row_ptr + j] * d_x[d_ja[row_ptr + j]];
-				}
+#pragma unroll(1)
+			for (j = coop_id; j < d_ia[thread_id + 1] - row_ptr; j += CSR_COOP)
+			{
+				r += d_a[row_ptr + j] * d_x[d_ja[row_ptr + j]];
+			}
 			// do reduction in shared mem
 			shareddata[local_row_id] = r;
-			__attribute__((opencl_unroll_hint))
-				for (s = CSR_COOP / 2; s > 0; s >>= 1)
-				{
-					if (coop_id < s) shareddata[local_row_id] += shareddata[local_row_id + s];
-				}
+#pragma unroll(UNROLL_SHARED)
+			for (s = CSR_COOP / 2; s > 0; s >>= 1)
+			{
+				if (coop_id < s) shareddata[local_row_id] += shareddata[local_row_id + s];
+			}
 			if (coop_id == 0) dst_y[thread_id] += shareddata[local_row_id];
 			thread_id += get_local_size(0) / CSR_COOP;
 		}

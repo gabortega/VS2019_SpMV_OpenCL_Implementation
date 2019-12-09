@@ -77,11 +77,14 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DCSR_REPEAT=" + std::to_string(repeat) +
 						" -DCSR_COOP=" + std::to_string(coop) +
+						" -DUNROLL_SHARED=" + std::to_string(coop/4) +
 						" -DN_MATRIX=" + std::to_string(d_csr->n);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_csr" };
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_ia = (d_csr->n + 1) * sizeof(cl_uint);
 	size_t byte_size_d_ja = d_csr->nnz * sizeof(cl_uint);

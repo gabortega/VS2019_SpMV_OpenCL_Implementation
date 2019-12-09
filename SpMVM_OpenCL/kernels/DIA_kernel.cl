@@ -19,7 +19,7 @@ __kernel void spmv_dia(__private unsigned int ndiags,
 	__private long q;
 	__private double r;
 
-#pragma unroll
+#pragma unroll(UNROLL_SHARED)
 	for (i = local_row_id; i < ndiags; i += WORKGROUP_SIZE)
 		sharedioff[i] = d_ioff[ioff_offset + i];
 	barrier(CLK_LOCAL_MEM_FENCE);
@@ -57,7 +57,7 @@ __kernel void spmv_dia(__private unsigned int ndiags,
 	__private long q;
 	__private float r;
 
-#pragma unroll
+#pragma unroll(UNROLL_SHARED)
 	for (i = local_row_id; i < ndiags; i += WORKGROUP_SIZE)
 		sharedioff[i] = d_ioff[ioff_offset + i];
 	barrier(CLK_LOCAL_MEM_FENCE);

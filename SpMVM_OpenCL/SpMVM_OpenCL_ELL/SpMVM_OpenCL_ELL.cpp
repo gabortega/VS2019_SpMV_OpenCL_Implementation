@@ -72,6 +72,8 @@ std::vector<CL_REAL> spmv_ELL(struct ellg_t* d_ell, const std::vector<CL_REAL> d
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_ell" };
 	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	//
 	size_t byte_size_d_jcoeff = d_ell->stride * *(d_ell->nell + d_ell->n) * sizeof(cl_uint);
 	size_t byte_size_d_a = d_ell->stride * *(d_ell->nell + d_ell->n) * sizeof(CL_REAL);
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
@@ -161,7 +163,9 @@ std::vector<CL_REAL> spmv_ELLG(struct ellg_t* d_ellg, const std::vector<CL_REAL>
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_ellg" };
-    //
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	//
     size_t byte_size_d_nell = (d_ellg->n + 1) * sizeof(cl_uint);
     size_t byte_size_d_jcoeff = d_ellg->stride * *(d_ellg->nell + d_ellg->n) * sizeof(cl_uint);
     size_t byte_size_d_a = d_ellg->stride * *(d_ellg->nell + d_ellg->n) * sizeof(CL_REAL);
@@ -250,14 +254,20 @@ std::vector<CL_REAL> spmv_HLL(struct hll_t* d_hll, const std::vector<CL_REAL> d_
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	IndexType unroll_val;
+	for (unroll_val = 1; (*(d_hll->nell + d_hll->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	//
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) + 
 						" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
-						" -DN_MATRIX=" + std::to_string(d_hll->n);
+						" -DN_MATRIX=" + std::to_string(d_hll->n) +
+						" -DUNROLL=" + std::to_string(unroll_val);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_hll" };
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_nell = d_hll->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_jcoeff = d_hll->total_mem * sizeof(cl_uint);
@@ -324,14 +334,20 @@ std::vector<CL_REAL> spmv_HLL_LOCAL(struct hll_t* d_hll, const std::vector<CL_RE
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
+	IndexType unroll_val;
+	for (unroll_val = 1; (*(d_hll->nell + d_hll->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	//
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
-						" -DN_MATRIX=" + std::to_string(d_hll->n);
+						" -DN_MATRIX=" + std::to_string(d_hll->n) +
+						" -DUNROLL=" + std::to_string(unroll_val);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_LOCAL_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_hll_local" };
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
 	//
 	size_t byte_size_d_nell = d_hll->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_jcoeff = d_hll->total_mem * sizeof(cl_uint);

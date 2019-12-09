@@ -14,7 +14,11 @@ __kernel void spmv_ell(
 	if (row_id >= N_MATRIX) return;
 
 	r = 0.0;
+#if NELL >= 32
+#pragma unroll(32)
+#else
 #pragma unroll
+#endif
 	for (i = 0; i < NELL; i++)
 	{
 		j = i * STRIDE_MATRIX + row_id;
@@ -39,7 +43,11 @@ __kernel void spmv_ell(
 	if (row_id >= N_MATRIX) return;
 
 	r = 0.0;
+#if NELL >= 80
+#pragma unroll(80)
+#else
 #pragma unroll
+#endif
 	for (i = 0; i < NELL; i++)
 	{
 		j = i * STRIDE_MATRIX + row_id;

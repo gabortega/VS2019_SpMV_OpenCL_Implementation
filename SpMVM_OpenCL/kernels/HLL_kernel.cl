@@ -22,7 +22,7 @@ __kernel void spmv_hll(
 	row_hoff = d_hoff[row_hack_id];
 
 	r = 0.0;
-#pragma unroll
+#pragma unroll(UNROLL)
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
@@ -55,7 +55,7 @@ __kernel void spmv_hll(
 	row_hoff = d_hoff[row_hack_id];
 
 	r = 0.0;
-#pragma unroll
+#pragma unroll(UNROLL)
 	for (i = 0; i < row_nell; i++)
 	{
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;

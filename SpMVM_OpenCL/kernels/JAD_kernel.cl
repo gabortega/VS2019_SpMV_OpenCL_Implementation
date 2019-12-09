@@ -4,6 +4,7 @@
 #if PRECISION == 2
 /*-------------------------------- Double-precision----------------------------------*/
 __kernel void spmv_jad(unsigned int njad,
+	__constant unsigned int* d_njad,
 	__constant unsigned int* d_ia,
 	__constant unsigned int* d_ja,
 	__constant double* d_a,
@@ -20,18 +21,18 @@ __kernel void spmv_jad(unsigned int njad,
 	__private long p, q;
 	__private double r;
 
-#pragma unroll
+#pragma unroll(UNROLL_SHARED)
 	for (i = local_row_id; i < njad + 1; i += WORKGROUP_SIZE)
 		sharedia[i] = d_ia[ia_offset + i];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
-	if (row_id >= N_MATRIX) return;
+	if (row_id >= N_MATRIX || ia_offset > d_njad[d_perm[row_id]]) return;
 
 	r = 0.0;
 	p = sharedia[0];
 	q = sharedia[1];
 	i = 0;
-#pragma unroll
+#pragma unroll(1)
 	while (((p + row_id) < q) && (i < njad))
 	{
 		j = p + row_id;
@@ -65,18 +66,18 @@ __kernel void spmv_jad(unsigned int njad,
 	__private long p, q;
 	__private float r;
 
-#pragma unroll
+#pragma unroll(UNROLL_SHARED)
 	for (i = local_row_id; i < njad + 1; i += WORKGROUP_SIZE)
 		sharedia[i] = d_ia[ia_offset + i];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
-	if (row_id >= N_MATRIX) return;
+	if (row_id >= N_MATRIX || ia_offset > d_njad[d_perm[row_id]]) return;
 
 	r = 0.0;
 	p = sharedia[0];
 	q = sharedia[1];
 	i = 0;
-#pragma unroll
+#pragma unroll(1)
 	while (((p + row_id) < q) && (i < njad))
 	{
 		j = p + row_id;
