@@ -120,6 +120,7 @@ struct hybhll_t {
 };
 
 void MM_To_COO(const char* filename, struct coo_t* coo, int log);
+void COO_To_MM(struct coo_t* coo, const char* filename);
 void COO_To_CSR(struct coo_t* coo, struct csr_t* csr, int log);
 void COO_To_MAT(struct coo_t* coo, struct mat_t* mat, int log);
 void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log);

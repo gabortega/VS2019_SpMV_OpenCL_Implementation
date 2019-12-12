@@ -332,6 +332,7 @@ int main(void)
 #endif
 
 	std::string input_filename = (INPUT_FOLDER + (std::string)"/" + INPUT_FILE);
+	std::string gen_filename = (INPUT_FOLDER + (std::string)"/" + GENERATOR_FOLDER + (std::string)"/" + INPUT_FILE);
 
 	if (createOutputDirectory(OUTPUT_FOLDER, DIA_OUTPUT_FOLDER))
 		exit(1);
@@ -343,7 +344,7 @@ int main(void)
 	freopen_s(&f, output_file.c_str(), "w", stdout);
 
 	std::cout << "-- LOADING INPUT FILE " << input_filename << " --" << std::endl;
-	MM_To_COO(input_filename.c_str(), &coo, COO_LOG);
+	MM_To_COO(gen_filename.c_str(), &coo, COO_LOG);
 	IndexType n = coo.n;
 	std::cout << "-- INPUT FILE LOADED --" << std::endl << std::endl;
 	std::cout << "-- PRE-PROCESSING INPUT --" << std::endl;

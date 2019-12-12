@@ -116,8 +116,9 @@
 //
 #define OUTPUT_FOLDER "../output"
 //
-// Storage format-specific output folders
+#define GENERATOR_FOLDER "random"
 //
+// Storage format-specific output folders
 #define COO_OUTPUT_FOLDER "COO"
 #define GMVM_OUTPUT_FOLDER "GMVM"
 #define CSR_OUTPUT_FOLDER "CSR"

@@ -163,19 +163,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\include\IO\convert_input.c" />
-    <ClCompile Include="..\include\IO\mmio.c" />
     <ClCompile Include="SpMVM_OpenCL_CSR.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\config\compiler_config.h" />
-    <ClInclude Include="..\include\IO\convert_input.h" />
-    <ClInclude Include="..\include\IO\mmio.h" />
     <ClInclude Include="..\include\SEQ\CSR.hpp" />
     <ClInclude Include="..\include\util_misc.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\kernels\CSR_kernel.cl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SpMVM_INPUT_LIB\SpMVM_INPUT_LIB.vcxproj">
+      <Project>{fb6f03d6-2e4b-4667-ba57-8bb62b4db464}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

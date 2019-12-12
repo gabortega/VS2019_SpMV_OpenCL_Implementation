@@ -105,6 +105,28 @@ void MM_To_COO(const char* filename, struct coo_t* coo, int log)
 	fclose(p);
 }
 
+/*--------------------------------------------------*/
+void COO_To_MM(struct coo_t* coo, const char* filename)
+{
+	MM_typecode matcode;
+	FILE* p;
+	if ((fopen_s(&p, filename, "w")) != 0 || p == NULL) {
+		fprintf(stdout, "Unable to open file %s\n", filename);
+		exit(1);
+	}
+	/*----------- WRITE MM banner */
+	fprintf(p, "%%%%MatrixMarket matrix coordinate real general\n");
+	/*------------- Write size */
+	fprintf(p, "%d %d %d\n", coo->n, coo->n, coo->nnz);
+	/*-------- write line by line */
+	IndexType i;
+	for (i = 0; i < coo->nnz; i++)
+	{
+		fprintf(p, "%d %d %20.13e\n", coo->ir[i], coo->jc[i], coo->val[i]);
+	}
+	fclose(p);
+}
+
 void COO_To_MAT(struct coo_t* coo, struct mat_t* mat, int log)
 {
 	mat->n = coo->n;

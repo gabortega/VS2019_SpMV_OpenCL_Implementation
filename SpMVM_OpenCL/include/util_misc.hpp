@@ -1,5 +1,5 @@
-#ifndef UTIL_TIME_H
-#define UTIL_TIME_H
+#ifndef UTIL_MISC_H
+#define UTIL_MISC_H
 
 #include<ctime>
 #include<string>
@@ -17,7 +17,6 @@ std::string getTimeOfRun()
 	localtime_s(&ltm, &now);
 	return "_" + std::to_string(ltm.tm_year + 1900) + std::to_string(ltm.tm_mon + 1) + std::to_string(ltm.tm_mday) + "_" + std::to_string(ltm.tm_hour) + (ltm.tm_min < 10 ? "0" : "") + std::to_string(ltm.tm_min) + (ltm.tm_sec < 10 ? "0" : "") + std::to_string(ltm.tm_sec);
 }
-#endif
 
 void printRunInfo(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz)
 {
@@ -46,3 +45,5 @@ int createOutputDirectory(std::string outputDirRoot, std::string outputDir) {
 		fprintf(stdout, "Problem creating root output directory: %s", outputDirRoot.c_str());
 	return 1;
 }
+
+#endif
