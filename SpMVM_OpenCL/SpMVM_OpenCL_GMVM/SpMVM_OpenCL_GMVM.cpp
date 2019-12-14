@@ -26,6 +26,8 @@
 std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<REAL> d_x)
 {
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//d_mat->val + d_x + dst_y
+	unsigned long long units_REAL = 3 * d_mat->n * d_mat->n;
 	//
 	unsigned long nanoseconds = 0, total_nanoseconds = 0;
 	//
@@ -33,11 +35,11 @@ std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<RE
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = GMVM_sequential(d_mat, d_x, dst_y);
-		printRunInfo(r + 1, nanoseconds, (d_mat->nnz));
+		printRunInfo(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_mat->nnz));
+	printAverageRunInfo(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
 
 	return dst_y;
 }
@@ -47,6 +49,8 @@ std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<RE
 std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d_x)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
+	//d_mat->val + d_x + dst_y
+	unsigned long long units_REAL = d_mat->n * d_mat->n + (((d_mat->n + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) * d_mat->n) + d_mat->n;
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	cl::Context context{ device };
@@ -96,12 +100,12 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 				queue,
 				cl::NDRange(jc::best_fit(d_mat->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
-		printRunInfo(r + 1, nanoseconds, (d_mat->nnz));
+		printRunInfo(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_mat->nnz));
+	printAverageRunInfo(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
 
 	return dst_y;
 }

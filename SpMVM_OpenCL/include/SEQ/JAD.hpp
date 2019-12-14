@@ -15,9 +15,10 @@
 unsigned long JAD_sequential(struct jad_t* d_jad, std::vector<REAL> d_x, std::vector<REAL>& dst_y)
 {
 	typedef std::chrono::high_resolution_clock Clock;
-	auto t1 = Clock::now();	
+	auto t1 = Clock::now();
 	//
-	for (IndexType i = 0, j = 0; j < d_jad->njad[d_jad->n]; j++)
+	IndexType njad = d_jad->njad[d_jad->n];
+	for (IndexType i = 0, j = 0; j < njad; j++)
 	{
 		IndexType p = d_jad->ia[j];
 		for (i = 0; (i < d_jad->n) && d_jad->njad[d_jad->perm[i]] > j; i++)

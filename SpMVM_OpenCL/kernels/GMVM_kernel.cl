@@ -40,7 +40,7 @@ __kernel void spmv_gmvm(
 	}
 
 	if (global_id < N_MATRIX)
-		dst_y[global_id] += r;
+		dst_y[global_id] = r;
 }
 
 #else
@@ -82,6 +82,6 @@ __kernel void spmv_gmvm(
 	}
 
 	if (global_id < N_MATRIX)
-		dst_y[global_id] += r;
+		dst_y[global_id] = r;
 }
 #endif

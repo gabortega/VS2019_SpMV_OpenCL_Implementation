@@ -46,10 +46,8 @@
 #define ELL_KERNEL_FILE "ELL_kernel.cl"
 #define ELLG_KERNEL_FILE "ELLG_kernel.cl"
 #define HLL_KERNEL_FILE "HLL_kernel.cl"
-#define HLL_LOCAL_KERNEL_FILE "HLL_LOCAL_kernel.cl"
 #define DIA_KERNEL_FILE "DIA_kernel.cl"
 #define HDIA_KERNEL_FILE "HDIA_kernel.cl"
-#define HDIA_LOCAL_KERNEL_FILE "HDIA_LOCAL_kernel.cl"
 //
 //#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048 !!! NO LONGER USED !!!
 #define WARP_SIZE 32
@@ -91,13 +89,11 @@
 #define ELLG 1
 #define HLL_SEQ 1
 #define HLL 1
-#define HLL_LOCAL 1
 //
 #define DIA_SEQ 1
 #define DIA 1
 #define HDIA_SEQ 1
 #define HDIA 1
-#define HDIA_LOCAL 1
 //
 #define HYB_ELL_SEQ 1
 #define HYB_ELL 1
@@ -105,7 +101,6 @@
 #define HYB_ELLG 1
 #define HYB_HLL_SEQ 1
 #define HYB_HLL 1
-#define HYB_HLL_LOCAL 1
 /*--------------------------------------------------*/
 
 /*--------------------------------------------------*/
@@ -161,13 +156,11 @@
 #define ELLG_OUTPUT_LOG 1
 #define HLL_SEQ_OUTPUT_LOG 1
 #define HLL_OUTPUT_LOG 1
-#define HLL_LOCAL_OUTPUT_LOG 1
 //
 #define DIA_SEQ_OUTPUT_LOG 1
 #define DIA_OUTPUT_LOG 1
 #define HDIA_SEQ_OUTPUT_LOG 1
 #define HDIA_OUTPUT_LOG 1
-#define HDIA_LOCAL_OUTPUT_LOG 1
 //
 #define HYB_ELL_SEQ_OUTPUT_LOG 1
 #define HYB_ELL_OUTPUT_LOG 1
@@ -175,7 +168,6 @@
 #define HYB_ELLG_OUTPUT_LOG 1
 #define HYB_HLL_SEQ_OUTPUT_LOG 1
 #define HYB_HLL_OUTPUT_LOG 1
-#define HYB_HLL_LOCAL_OUTPUT_LOG 1
 //
 /*--------------------------------------------------*/
 #endif

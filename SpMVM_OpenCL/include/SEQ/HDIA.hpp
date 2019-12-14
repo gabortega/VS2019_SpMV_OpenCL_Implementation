@@ -18,8 +18,10 @@ unsigned long HDIA_sequential(struct hdia_t* d_hdia, std::vector<REAL> d_x, std:
 	//
 	IndexType row_hack_id, row_memoff, ndiags, row_hoff;
 	//
+	REAL sum;
 	for (IndexType i = 0; i < d_hdia->n; i++)
 	{
+		sum = 0.0;
 		row_hack_id = i / HDIA_HACKSIZE;
 		row_memoff = d_hdia->memoff[row_hack_id];
 		ndiags = d_hdia->ndiags[row_hack_id];
@@ -29,8 +31,9 @@ unsigned long HDIA_sequential(struct hdia_t* d_hdia, std::vector<REAL> d_x, std:
 		{
 			long q = d_hdia->ioff[row_hoff + j] + i;
 			if (q >= 0 && q < d_hdia->n)
-				dst_y[i] += d_hdia->diags[row_memoff + i + (j * HDIA_HACKSIZE)] * d_x[q];
+				sum += d_hdia->diags[row_memoff + i + (j * HDIA_HACKSIZE)] * d_x[q];
 		}
+		dst_y[i] = sum;
 	}
 	//
 	auto t2 = Clock::now();

@@ -35,7 +35,6 @@ void generateMatrixGaussMethodRow(IndexType n, REAL row_mean, REAL row_stddev, s
 			}
 		}
 	}
-
 	coo->nnz = coo_index;
 	coo->ir = (IndexType*)realloc(coo->ir, coo_index * sizeof(IndexType));
 	coo->jc = (IndexType*)realloc(coo->jc, coo_index * sizeof(IndexType));

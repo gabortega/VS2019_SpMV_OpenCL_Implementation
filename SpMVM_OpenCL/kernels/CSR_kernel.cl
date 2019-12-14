@@ -39,7 +39,7 @@ __kernel void spmv_csr(
 			{
 				if (coop_id < s) shareddata[local_row_id] += shareddata[local_row_id + s];
 			}
-			if (coop_id == 0) dst_y[thread_id] += shareddata[local_row_id];
+			if (coop_id == 0) dst_y[thread_id] = shareddata[local_row_id];
 			thread_id += get_local_size(0) / CSR_COOP;
 		}
 	}
@@ -82,7 +82,7 @@ __kernel void spmv_csr(
 			{
 				if (coop_id < s) shareddata[local_row_id] += shareddata[local_row_id + s];
 			}
-			if (coop_id == 0) dst_y[thread_id] += shareddata[local_row_id];
+			if (coop_id == 0) dst_y[thread_id] = shareddata[local_row_id];
 			thread_id += get_local_size(0) / CSR_COOP;
 		}
 	}

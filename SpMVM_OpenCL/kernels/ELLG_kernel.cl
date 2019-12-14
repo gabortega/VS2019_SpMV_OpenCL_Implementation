@@ -8,12 +8,13 @@ __kernel void spmv_ellg(
 	__global double* dst_y)
 {
 	__private unsigned int row_id = get_global_id(0);
+	
+	if (row_id >= N_MATRIX) return;
+
 	__private unsigned int row_nell = d_nell[row_id];
 
 	__private unsigned int i, j;
 	__private double r;
-
-	if (row_id >= N_MATRIX) return;
 
 	r = 0.0;
 #pragma unroll(5)
@@ -22,7 +23,7 @@ __kernel void spmv_ellg(
 		j = i * STRIDE_MATRIX + row_id;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 
 #else
@@ -35,12 +36,13 @@ __kernel void spmv_ellg(
 	__global float* dst_y)
 {
 	__private unsigned int row_id = get_global_id(0);
+	
+	if (row_id >= N_MATRIX) return;
+
 	__private unsigned int row_nell = d_nell[row_id];
 
 	__private unsigned int i, j;
 	__private float r;
-
-	if (row_id >= N_MATRIX) return;
 
 	r = 0.0;
 #pragma unroll(5)
@@ -49,6 +51,6 @@ __kernel void spmv_ellg(
 		j = i * STRIDE_MATRIX + row_id;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 #endif

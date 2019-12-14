@@ -24,7 +24,7 @@ __kernel void spmv_ell(
 		j = i * STRIDE_MATRIX + row_id;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 
 #else
@@ -53,6 +53,6 @@ __kernel void spmv_ell(
 		j = i * STRIDE_MATRIX + row_id;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 #endif

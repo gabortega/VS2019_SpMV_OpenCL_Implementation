@@ -1,6 +1,3 @@
-// Implementation based off CUDA_ITSOL SpMV by: Ruipeng Li, Yousef Saad
-// URL: https://www-users.cs.umn.edu/~saad/software/CUDA_ITSOL/CUDA_ITSOL.tar.gz
-//
 #if PRECISION == 2
 /*-------------------------------- Double-precision----------------------------------*/
 __kernel void spmv_hdia(
@@ -37,7 +34,7 @@ __kernel void spmv_hdia(
 			r += *(d_diags + row_memoff + row_id + i * HACKSIZE) * d_x[q];
 		}
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 
 #else
@@ -76,6 +73,6 @@ __kernel void spmv_hdia(
 			r += *(d_diags + row_memoff + row_id + i * HACKSIZE) * d_x[q];
 		}
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 #endif

@@ -28,7 +28,7 @@ __kernel void spmv_hll(
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 
 #else
@@ -61,6 +61,6 @@ __kernel void spmv_hll(
 		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
-	dst_y[row_id] += r;
+	dst_y[row_id] = r;
 }
 #endif

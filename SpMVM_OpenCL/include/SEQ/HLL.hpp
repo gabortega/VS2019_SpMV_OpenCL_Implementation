@@ -18,8 +18,10 @@ unsigned long HLL_sequential(struct hll_t* d_hll, std::vector<REAL> d_x, std::ve
 	//
 	IndexType row_hack_id, row_nell, row_hoff;
 	//
+	REAL sum;
 	for (IndexType i = 0; i < d_hll->n; i++)
 	{
+		sum = 0.0;
 		row_hack_id = i / HLL_HACKSIZE;
 		row_nell = d_hll->nell[row_hack_id];
 		row_hoff = d_hll->hoff[row_hack_id];
@@ -27,8 +29,9 @@ unsigned long HLL_sequential(struct hll_t* d_hll, std::vector<REAL> d_x, std::ve
 		for (IndexType j = 0; j < row_nell; j++)
 		{
 			IndexType q = j * HLL_HACKSIZE + (i % HLL_HACKSIZE) + row_hoff;
-			dst_y[i] += d_hll->a[q] * d_x[d_hll->jcoeff[q]];
+			sum += d_hll->a[q] * d_x[d_hll->jcoeff[q]];
 		}
+		dst_y[i] = sum;
 	}
 	//
 	auto t2 = Clock::now();

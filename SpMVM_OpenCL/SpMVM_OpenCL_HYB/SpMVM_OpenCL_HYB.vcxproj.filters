@@ -19,6 +19,9 @@
     <Filter Include="Header Files\compiler_config">
       <UniqueIdentifier>{f32d1dc5-020e-40e8-8390-7ef114a901f9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\SEQ">
+      <UniqueIdentifier>{e339872d-2713-4296-9a2a-bf89e3f4e3bc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="SpMVM_OpenCL_HYB.cpp">
@@ -32,6 +35,18 @@
     <ClInclude Include="..\include\util_misc.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\SEQ\CSR.hpp">
+      <Filter>Header Files\SEQ</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\SEQ\ELL.hpp">
+      <Filter>Header Files\SEQ</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\SEQ\ELLG.hpp">
+      <Filter>Header Files\SEQ</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\SEQ\HLL.hpp">
+      <Filter>Header Files\SEQ</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\kernels\ELL_kernel.cl">
@@ -44,9 +59,6 @@
       <Filter>Source Files\kernel</Filter>
     </None>
     <None Include="..\kernels\HLL_kernel.cl">
-      <Filter>Source Files\kernel</Filter>
-    </None>
-    <None Include="..\kernels\HLL_LOCAL_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
   </ItemGroup>

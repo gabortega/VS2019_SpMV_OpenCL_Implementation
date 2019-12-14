@@ -55,8 +55,5 @@
     <None Include="..\kernels\HLL_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
-    <None Include="..\kernels\HLL_LOCAL_kernel.cl">
-      <Filter>Source Files\kernel</Filter>
-    </None>
   </ItemGroup>
 </Project>

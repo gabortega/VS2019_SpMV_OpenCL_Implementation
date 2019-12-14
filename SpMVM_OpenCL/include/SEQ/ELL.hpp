@@ -16,13 +16,17 @@ unsigned long ELL_sequential(struct ellg_t* d_ell, std::vector<REAL> d_x, std::v
 	typedef std::chrono::high_resolution_clock Clock;
 	auto t1 = Clock::now();
 	//
+	IndexType nell = d_ell->nell[d_ell->n];
+	REAL sum;
 	for (IndexType i = 0; i < d_ell->n; i++)
 	{
-		for (IndexType j = 0; j < d_ell->nell[d_ell->n]; j++)
+		sum = 0.0;
+		for (IndexType j = 0; j < nell; j++)
 		{
 			IndexType q = i + (j * d_ell->stride);
-			dst_y[i] += d_ell->a[q] * d_x[d_ell->jcoeff[q]];
+			sum += d_ell->a[q] * d_x[d_ell->jcoeff[q]];
 		}
+		dst_y[i] = sum;
 	}
 	//
 	auto t2 = Clock::now();

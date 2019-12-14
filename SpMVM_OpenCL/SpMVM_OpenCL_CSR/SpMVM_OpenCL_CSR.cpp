@@ -31,6 +31,10 @@ std::vector<REAL> spmv_CSR_sequential(struct csr_t* d_csr, const std::vector<REA
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]--;
 	//
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//d_csr->a + d_x + dst_y
+	unsigned long long units_REAL = d_csr->nnz + d_csr->nnz + d_csr->nnz;
+	//d_csr->ia + d_csr->ja
+	unsigned long long units_IndexType = d_csr->n + d_csr->nnz;
 	//
 	unsigned long nanoseconds = 0, total_nanoseconds = 0;
 	//
@@ -38,11 +42,11 @@ std::vector<REAL> spmv_CSR_sequential(struct csr_t* d_csr, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = CSR_sequential(d_csr, d_x, dst_y);
-		printRunInfo(r + 1, nanoseconds, (d_csr->nnz));
+		printRunInfo(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_csr->nnz));
+	printAverageRunInfo(average_nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;
@@ -68,6 +72,10 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 	nworkgroups = 1 + (d_csr->n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
+	//d_csr->a + d_x + dst_y
+	unsigned long long units_REAL = d_csr->nnz + d_csr->nnz + d_csr->n;
+	//d_csr->ia + d_csr->ja
+	unsigned long long units_IndexType = d_csr->n + d_csr->nnz;
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	cl::Context context{ device };
@@ -128,12 +136,12 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 				queue,
 				cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
 				cl::NDRange(CSR_WORKGROUP_SIZE));
-		printRunInfo(r + 1, nanoseconds, (d_csr->nnz));
+		printRunInfo(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_csr->nnz));
+	printAverageRunInfo(average_nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;
