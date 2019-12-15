@@ -13,38 +13,39 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\kernel">
-      <UniqueIdentifier>{79e0391b-6b23-4ab2-b187-4202fef3fa3b}</UniqueIdentifier>
+    <Filter Include="Source Files\IO">
+      <UniqueIdentifier>{09f9f7e4-3f70-4bc2-afa4-eb8f9a467457}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\IO">
+      <UniqueIdentifier>{71baf2b5-a93e-452d-9d5a-6bafd1c07e89}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\compiler_config">
       <UniqueIdentifier>{f32d1dc5-020e-40e8-8390-7ef114a901f9}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\SEQ">
-      <UniqueIdentifier>{28e6e99c-4e0b-4de0-9cba-2230c054766f}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="run_CSR.cpp">
+    <ClCompile Include="SpMVM_OpenCL_SUITE.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\IO\mmio.c">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="..\include\IO\convert_input.c">
+      <Filter>Source Files\IO</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\IO\mmio.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="..\include\IO\convert_input.h">
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
     <ClInclude Include="..\config\compiler_config.h">
       <Filter>Header Files\compiler_config</Filter>
     </ClInclude>
     <ClInclude Include="..\include\util_misc.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\SEQ\CSR.hpp">
-      <Filter>Header Files\SEQ</Filter>
-    </ClInclude>
-    <ClInclude Include="SpMVM_OpenCL_CSR.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\kernels\CSR_kernel.cl">
-      <Filter>Source Files\kernel</Filter>
-    </None>
   </ItemGroup>
 </Project>

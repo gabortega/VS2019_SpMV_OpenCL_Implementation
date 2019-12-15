@@ -24,7 +24,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SpMVM_OpenCL_ELL.cpp">
+    <ClCompile Include="run_ELL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -43,6 +43,9 @@
     </ClInclude>
     <ClInclude Include="..\include\SEQ\HLL.hpp">
       <Filter>Header Files\SEQ</Filter>
+    </ClInclude>
+    <ClInclude Include="SpMVM_OpenCL_ELL.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -97,6 +97,7 @@ namespace SpMVMGENMAT {
 	private: System::Windows::Forms::NumericUpDown^ numericUpDown8;
 	private: System::Windows::Forms::NumericUpDown^ numericUpDown7;
 	private: System::Windows::Forms::NumericUpDown^ numericUpDown6;
+	private: System::Windows::Forms::CheckBox^ checkBox1;
 
 	private:
 		/// <summary>
@@ -148,6 +149,7 @@ namespace SpMVMGENMAT {
 			this->label10 = (gcnew System::Windows::Forms::Label());
 			this->label11 = (gcnew System::Windows::Forms::Label());
 			this->folderBrowserDialog1 = (gcnew System::Windows::Forms::FolderBrowserDialog());
+			this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
 			this->groupBox1->SuspendLayout();
 			this->groupBox8->SuspendLayout();
 			this->groupBox5->SuspendLayout();
@@ -324,6 +326,7 @@ namespace SpMVMGENMAT {
 			// 
 			// groupBox3
 			// 
+			this->groupBox3->Controls->Add(this->checkBox1);
 			this->groupBox3->Controls->Add(this->numericUpDown3);
 			this->groupBox3->Controls->Add(this->label5);
 			this->groupBox3->Controls->Add(this->label4);
@@ -527,6 +530,16 @@ namespace SpMVMGENMAT {
 			this->label11->TabIndex = 0;
 			this->label11->Text = L"Start:";
 			// 
+			// checkBox1
+			// 
+			this->checkBox1->AutoSize = true;
+			this->checkBox1->Location = System::Drawing::Point(298, 19);
+			this->checkBox1->Name = L"checkBox1";
+			this->checkBox1->Size = System::Drawing::Size(78, 17);
+			this->checkBox1->TabIndex = 6;
+			this->checkBox1->Text = L"Flip matrix\?";
+			this->checkBox1->UseVisualStyleBackColor = true;
+			// 
 			// SpMVM_GEN_MAT_FORM
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -564,7 +577,7 @@ namespace SpMVMGENMAT {
 
 		}
 #pragma endregion
-	private: System::Void generateMatrixImage(struct coo_t* coo)
+	private: System::Void generateMatrixImage(struct coo_rand_t* coo)
 	{
 		System::Drawing::Bitmap image(coo->n, coo->n);
 		msclr::interop::marshal_context context;
@@ -580,7 +593,7 @@ namespace SpMVMGENMAT {
 	private: System::Void button2_Click(System::Object^ sender, System::EventArgs^ e)
 	{
 		FILE* f;
-		struct coo_t coo;
+		struct coo_rand_t coo;
 		//
 		msclr::interop::marshal_context context;
 		std::string gen_filename = (INPUT_FOLDER + (std::string)"/" + GENERATOR_FOLDER + (std::string)"/" + context.marshal_as<std::string>(this->textBox2->Text) + ".mtx");
@@ -590,17 +603,17 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixGaussMethodRow(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), &coo);
+		generateMatrixGaussMethodRow(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), &coo, this->checkBox1->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
-		FreeCOO(&coo);
+		FreeCOORAND(&coo);
 		showCompletedMessage();
 	}
 
 	private: System::Void button3_Click(System::Object^ sender, System::EventArgs^ e)
 	{
 		FILE* f;
-		struct coo_t coo;
+		struct coo_rand_t coo;
 		//
 		msclr::interop::marshal_context context;
 		std::string gen_filename = (INPUT_FOLDER + (std::string)"/" + GENERATOR_FOLDER + (std::string)"/" + context.marshal_as<std::string>(this->textBox2->Text) + ".mtx");
@@ -610,17 +623,17 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixGaussMethodCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo);
+		generateMatrixGaussMethodCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo, this->checkBox1->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
-		FreeCOO(&coo);
+		FreeCOORAND(&coo);
 		showCompletedMessage();
 	}
 
 	private: System::Void button4_Click(System::Object^ sender, System::EventArgs^ e)
 	{
 		FILE* f;
-		struct coo_t coo;
+		struct coo_rand_t coo;
 		//
 		msclr::interop::marshal_context context;
 		std::string gen_filename = (INPUT_FOLDER + (std::string)"/" + GENERATOR_FOLDER + (std::string)"/" + context.marshal_as<std::string>(this->textBox2->Text) + ".mtx");
@@ -630,10 +643,10 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixGaussMethodFull(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo);
+		generateMatrixGaussMethodFull(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo, this->checkBox1->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
-		FreeCOO(&coo);
+		FreeCOORAND(&coo);
 		showCompletedMessage();
 	}
 
@@ -642,7 +655,7 @@ namespace SpMVMGENMAT {
 		skipMethodRowCheckInput();
 		//
 		FILE* f;
-		struct coo_t coo;
+		struct coo_rand_t coo;
 		//
 		msclr::interop::marshal_context context;
 		std::string gen_filename = (INPUT_FOLDER + (std::string)"/" + GENERATOR_FOLDER + (std::string)"/" + context.marshal_as<std::string>(this->textBox2->Text) + ".mtx");
@@ -652,10 +665,10 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixImbalancedRow(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToUInt64(this->numericUpDown6->Value), System::Decimal::ToUInt64(this->numericUpDown7->Value), &coo);
+		generateMatrixImbalancedRow(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToUInt64(this->numericUpDown6->Value), System::Decimal::ToUInt64(this->numericUpDown7->Value), &coo, this->checkBox1->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
-		FreeCOO(&coo);
+		FreeCOORAND(&coo);
 		showCompletedMessage();
 	}
 
@@ -664,7 +677,7 @@ namespace SpMVMGENMAT {
 		skipMethodColCheckInput();
 		//
 		FILE* f;
-		struct coo_t coo;
+		struct coo_rand_t coo;
 		//
 		msclr::interop::marshal_context context;
 		std::string gen_filename = (INPUT_FOLDER + (std::string)"/" + GENERATOR_FOLDER + (std::string)"/" + context.marshal_as<std::string>(this->textBox2->Text) + ".mtx");
@@ -674,10 +687,10 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixImbalancedCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToUInt64(this->numericUpDown8->Value), System::Decimal::ToUInt64(this->numericUpDown9->Value), &coo);
+		generateMatrixImbalancedCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToUInt64(this->numericUpDown8->Value), System::Decimal::ToUInt64(this->numericUpDown9->Value), &coo, this->checkBox1->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
-		FreeCOO(&coo);
+		FreeCOORAND(&coo);
 		showCompletedMessage();
 	}
 

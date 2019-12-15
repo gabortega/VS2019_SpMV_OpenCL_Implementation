@@ -91,7 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_INC);$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,7 +129,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_INC);$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,7 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="SpMVM_OpenCL_ELL.cpp" />
+    <ClCompile Include="run_ELL.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\config\compiler_config.h" />
@@ -171,6 +171,7 @@
     <ClInclude Include="..\include\SEQ\ELLG.hpp" />
     <ClInclude Include="..\include\SEQ\HLL.hpp" />
     <ClInclude Include="..\include\util_misc.hpp" />
+    <ClInclude Include="SpMVM_OpenCL_ELL.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\kernels\ELLG_kernel.cl" />

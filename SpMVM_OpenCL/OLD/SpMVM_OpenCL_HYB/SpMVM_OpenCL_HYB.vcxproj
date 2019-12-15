@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
-    <ProjectGuid>{91B5E638-821A-4A97-883B-76A5B3ADF571}</ProjectGuid>
+    <ProjectGuid>{8B2F8BE8-0C6A-405C-8687-B27230B2E25D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>SpMVMOpenCLCSR</RootNamespace>
+    <RootNamespace>SpMVMOpenCLHYB</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -91,7 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_INC);$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,7 +129,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(CUDA_PATH_INC);$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,21 +163,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="run_CSR.cpp" />
+    <ClCompile Include="..\include\IO\convert_input.c" />
+    <ClCompile Include="..\include\IO\mmio.c" />
+    <ClCompile Include="SpMVM_OpenCL_HYB.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\config\compiler_config.h" />
-    <ClInclude Include="..\include\SEQ\CSR.hpp" />
+    <ClInclude Include="..\include\IO\convert_input.h" />
+    <ClInclude Include="..\include\IO\mmio.h" />
     <ClInclude Include="..\include\util_misc.hpp" />
-    <ClInclude Include="SpMVM_OpenCL_CSR.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\kernels\CSR_kernel.cl" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\SpMVM_INPUT_LIB\SpMVM_INPUT_LIB.vcxproj">
-      <Project>{fb6f03d6-2e4b-4667-ba57-8bb62b4db464}</Project>
-    </ProjectReference>
+    <None Include="..\kernels\COO_kernel.cl" />
+    <None Include="..\kernels\ELL_kernel.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

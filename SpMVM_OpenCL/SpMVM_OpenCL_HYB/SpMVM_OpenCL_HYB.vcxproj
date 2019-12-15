@@ -91,7 +91,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_INC);$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,7 +129,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(CUDA_PATH_INC);$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,15 +163,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="SpMVM_OpenCL_HYB.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\config\compiler_config.h" />
     <ClInclude Include="..\include\SEQ\CSR.hpp" />
     <ClInclude Include="..\include\SEQ\ELL.hpp" />
     <ClInclude Include="..\include\SEQ\ELLG.hpp" />
     <ClInclude Include="..\include\SEQ\HLL.hpp" />
     <ClInclude Include="..\include\util_misc.hpp" />
+    <ClInclude Include="SpMVM_OpenCL_HYB.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\kernels\CSR_kernel.cl" />
@@ -183,6 +181,9 @@
     <ProjectReference Include="..\SpMVM_INPUT_LIB\SpMVM_INPUT_LIB.vcxproj">
       <Project>{fb6f03d6-2e4b-4667-ba57-8bb62b4db464}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="run_HYB.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

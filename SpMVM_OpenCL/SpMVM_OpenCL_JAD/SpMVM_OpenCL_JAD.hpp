@@ -1,6 +1,8 @@
 #include<compiler_config.h>
 
 #if JAD_SEQ || JAD
+#ifndef OPENCL_JAD_H
+#define OPENCL_JAD_H
 
 #include<stdio.h>
 #include<string>
@@ -153,85 +155,5 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 }
 #endif
 
-int main(void)
-{
-	// Error checking
-	if (WORKGROUP_SIZE > MAX_NJAD_PER_WG) 
-	{
-		std::cout << "!!! ERROR: WORKGROUP_SIZE CANNOT BE GREATER THAN MAX_NJAD_PER_WG !!!" << std::endl;
-		system("PAUSE");
-		exit(1);
-	}
-
-	FILE* f;
-	struct coo_t coo;
-	struct csr_t csr;
-	struct jad_t jad;
-
-	std::string input_filename = (INPUT_FOLDER + (std::string)"/" + INPUT_FILE);
-
-	if (createOutputDirectory(OUTPUT_FOLDER, JAD_OUTPUT_FOLDER))
-		exit(1);
-	std::string output_file = (OUTPUT_FOLDER + (std::string)"/" + JAD_OUTPUT_FOLDER + (std::string)"/" + OUTPUT_FILENAME + getTimeOfRun() + OUTPUT_FILEFORMAT);
-
-	std::cout << "!!! OUTPUT IS BEING WRITTEN TO " << output_file << " !!!" << std::endl;
-	std::cout << "!!! PROGRAM WILL EXIT AUTOMATICALLY AFTER PROCESSING; PRESS CTRL-C TO ABORT !!!" << std::endl;
-	system("PAUSE");
-	freopen_s(&f, output_file.c_str(), "w", stdout);
-
-	std::cout << "-- LOADING INPUT FILE " << input_filename << " --" << std::endl;
-	MM_To_COO(input_filename.c_str(), &coo, COO_LOG);
-	IndexType n = coo.n;
-	std::cout << "-- INPUT FILE LOADED --" << std::endl << std::endl;
-	std::cout << "-- PRE-PROCESSING INPUT --" << std::endl;
-	COO_To_CSR(&coo, &csr, CSR_LOG);
-	CSR_To_JAD(&csr, &jad, JAD_LOG);
-	FreeCOO(&coo);
-	FreeCSR(&csr);
-	std::cout << "-- DONE PRE-PROCESSING INPUT --" << std::endl << std::endl;
-
-	std::vector<CL_REAL> x = std::vector<CL_REAL>();
-	for (IndexType i = 0; i < n; i++)
-		x.push_back(i);
-
-#if JAD_SEQ
-	std::cout << std::endl << "-- STARTING JAD SEQUENTIAL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y1 = spmv_JAD_sequential(&jad, x);
-	std::cout << std::endl << "-- FINISHED JAD SEQUENTIAL OPERATION --" << std::endl << std::endl;
-	if (JAD_SEQ_OUTPUT_LOG)
-	{
-		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
-		for (IndexType i = 0; i < y1.size(); i++)
-			std::cout << y1[i] << " ";
-		std::cout << std::endl;
-	}
 #endif
-#if JAD
-	std::cout << std::endl << "-- STARTING JAD KERNEL OPERATION --" << std::endl << std::endl;
-	std::vector<CL_REAL> y2 = spmv_JAD(&jad, x);
-	std::cout << std::endl << "-- FINISHED JAD KERNEL OPERATION --" << std::endl << std::endl;
-	if (JAD_OUTPUT_LOG)
-	{
-		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
-		for (IndexType i = 0; i < y2.size(); i++)
-			std::cout << y2[i] << " ";
-		std::cout << std::endl;
-	}
-#endif
-
-	x.clear();
-	FreeJAD(&jad);
-#if JAD_SEQ
-	y1.clear();
-#endif
-#if JAD
-	y2.clear();
-#endif
-#if DEBUG
-	system("PAUSE"); // for debugging
-#endif
-
-	return 0;
-}
-
 #endif

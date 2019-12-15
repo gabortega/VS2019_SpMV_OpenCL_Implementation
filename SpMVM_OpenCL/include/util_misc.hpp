@@ -1,3 +1,5 @@
+#include<compiler_config.h>
+
 #ifndef UTIL_MISC_H
 #define UTIL_MISC_H
 
@@ -7,8 +9,6 @@
 #include<stdlib.h>
 #include<stdio.h>
 #include<iostream>
-
-#include<compiler_config.h>
 
 #include<IO/convert_input.h>
 

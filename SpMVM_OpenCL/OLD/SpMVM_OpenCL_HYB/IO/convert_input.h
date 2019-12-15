@@ -3,11 +3,6 @@
 
 #include<compiler_config.h>
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<stdbool.h>
-#include<IO/mmio.h>
-
 #ifndef CONVERT_IO_H
 #define CONVERT_IO_H
 
@@ -25,28 +20,12 @@ extern "C"
 #endif
 
 /*---- sparse matrix data structure */
-/* COO format type for randomly generated matrices */
-struct coo_rand_t {
-	IndexType n;
-	IndexType nnz;
-	IndexType* ir;
-	IndexType* jc;
-	float* val;
-};
-
 /* COO format type */
 struct coo_t {
 	IndexType n;
 	IndexType nnz;
 	IndexType* ir;
 	IndexType* jc;
-	REAL* val;
-};
-
-/* General Matrix format */
-struct mat_t {
-	IndexType n;
-	IndexType nnz;
 	REAL* val;
 };
 
@@ -121,7 +100,7 @@ struct hdia_t {
 struct hybellg_t {
 	IndexType n;
 	IndexType nnz;
-	struct csr_t csr;
+	struct coo_t coo;
 	struct ellg_t ellg;
 };
 
@@ -129,30 +108,29 @@ struct hybellg_t {
 struct hybhll_t {
 	IndexType n;
 	IndexType nnz;
-	struct csr_t csr;
+	struct coo_t coo;
 	struct hll_t hll;
 };
 
 void MM_To_COO(const char* filename, struct coo_t* coo, int log);
-void COO_To_MM(struct coo_rand_t* coo, const char* filename);
 void COO_To_CSR(struct coo_t* coo, struct csr_t* csr, int log);
-void COO_To_MAT(struct coo_t* coo, struct mat_t* mat, int log);
 void CSR_To_JAD(struct csr_t* csr, struct jad_t* jad, int log);
 int CSR_To_ELLG(struct csr_t* csr, struct ellg_t* ellg, int log);
+int CSR_To_ELLG_K(struct csr_t* csr, struct ellg_t* ellg, IndexType maxell, int log);
 int CSR_To_HLL(struct csr_t* csr, struct hll_t* hll, int log);
+int CSR_To_HLL_K(struct csr_t* csr, struct hll_t* hll, IndexType maxell, int log);
 int CSR_To_DIA(struct csr_t* csr, struct dia_t* dia, int log);
 int CSR_To_HDIA(struct csr_t* csr, struct hdia_t* hdia, int log);
-void CSR_To_HYBELLG(struct csr_t* coo, struct hybellg_t* hyb, int log);
-void CSR_To_HYBHLL(struct csr_t* coo, struct hybhll_t* hyb, int log);
+void COO_To_HYBELLG(struct coo_t* coo, struct hybellg_t* hyb, int log);
+void COO_To_HYBHLL(struct coo_t* coo, struct hybhll_t* hyb, int log);
 
-void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, long ilo, long ihi);
+int compute_hyb_cols_per_row(struct csr_t* csr);
+void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, IndexType ilo, IndexType ihi);
 void PadJADWARP(struct jad_t* jadg);
 void infdia(IndexType n, IndexType* ja, IndexType* ia, IndexType* ind, IndexType idiag);
 void hinfdia(IndexType lowerb, IndexType higherb, IndexType n, IndexType* ja, IndexType* ia, IndexType* ind, IndexType idiag);
 
-void FreeCOORAND(struct coo_rand_t* coo);
 void FreeCOO(struct coo_t* coo);
-void FreeMAT(struct mat_t* mat);
 void FreeCSR(struct csr_t* csr);
 void FreeJAD(struct jad_t* jad);
 void FreeELLG(struct ellg_t* ellg);

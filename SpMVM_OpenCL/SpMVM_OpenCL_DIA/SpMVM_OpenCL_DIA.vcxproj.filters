@@ -24,7 +24,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SpMVM_OpenCL_DIA.cpp">
+    <ClCompile Include="run_DIA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -40,6 +40,9 @@
     </ClInclude>
     <ClInclude Include="..\include\SEQ\HDIA.hpp">
       <Filter>Header Files\SEQ</Filter>
+    </ClInclude>
+    <ClInclude Include="SpMVM_OpenCL_DIA.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

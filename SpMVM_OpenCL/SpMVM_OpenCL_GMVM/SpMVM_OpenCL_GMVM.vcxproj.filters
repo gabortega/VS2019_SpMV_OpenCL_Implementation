@@ -24,11 +24,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="SpMVM_OpenCL_GMVM.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="..\config\compiler_config.h">
       <Filter>Header Files\compiler_config</Filter>
     </ClInclude>
@@ -38,10 +33,18 @@
     <ClInclude Include="..\include\SEQ\GMVM.hpp">
       <Filter>Header Files\SEQ</Filter>
     </ClInclude>
+    <ClInclude Include="SpMVM_OpenCL_GMVM.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\kernels\GMVM_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="run_GMVM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

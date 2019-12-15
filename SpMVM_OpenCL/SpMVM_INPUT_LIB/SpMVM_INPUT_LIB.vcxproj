@@ -31,7 +31,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{FB6F03D6-2E4B-4667-BA57-8BB62B4DB464}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>SpMVM_INPUT_LIB</RootNamespace>
+    <RootNamespace>SpMVMINPUTLIB</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
