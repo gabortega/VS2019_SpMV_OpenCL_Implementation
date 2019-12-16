@@ -103,7 +103,7 @@
 /*--------------------------------------------------*/
 //            Input/Output related
 //
-#define INPUT_FILE_MODE 0 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
+#define INPUT_FILE_MODE 1 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
 //
 #define INPUT_FOLDER "../input"
 #define INPUT_FILE "sherman3.mtx"
