@@ -7,7 +7,7 @@
 // This setting sets the precision of the floating point calculations:
 // 1 = single-precision
 // 2 = double-precision
-#define PRECISION 2
+#define PRECISION 1
 //
 // This setting is required in order to pre-allocate sufficient space
 // for the diag array of the DIA format.

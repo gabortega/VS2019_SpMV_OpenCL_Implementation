@@ -50,6 +50,7 @@ __kernel void spmv_jad(unsigned int njad,
 #else
 /*-------------------------------- Single-precision----------------------------------*/
 __kernel void spmv_jad(unsigned int njad,
+	__constant unsigned int* d_njad,
 	__constant unsigned int* d_ia,
 	__constant unsigned int* d_ja,
 	__constant float* d_a,

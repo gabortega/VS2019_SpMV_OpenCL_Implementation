@@ -53,7 +53,7 @@ __kernel void spmv_gmvm(
 {
 	__private unsigned int global_id = get_global_id(0);
 	__private unsigned int local_id = get_local_id(0);
-	__private unsigned int i, j;
+	__private unsigned int i, j, q;
 
 	__private float r = 0.0;
 
