@@ -33,7 +33,7 @@ std::vector<REAL> spmv_CSR_sequential(struct csr_t* d_csr, const std::vector<REA
 	//d_csr->ia + d_csr->ja
 	unsigned long long units_IndexType = d_csr->n + d_csr->nnz;
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
@@ -131,7 +131,7 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-				cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
+				cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 				cl::NDRange(CSR_WORKGROUP_SIZE));
 		printRunInfo(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;

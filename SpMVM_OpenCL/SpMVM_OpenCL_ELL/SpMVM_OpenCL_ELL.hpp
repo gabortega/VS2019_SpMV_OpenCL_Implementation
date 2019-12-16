@@ -34,7 +34,7 @@ std::vector<REAL> spmv_ELL_sequential(struct ellg_t* d_ell, const std::vector<RE
 	//d_ell->jcoeff
 	unsigned long long units_IndexType = d_ell->n * d_ell->nell[d_ell->n];
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
@@ -138,7 +138,7 @@ std::vector<REAL> spmv_ELLG_sequential(struct ellg_t* d_ellg, const std::vector<
 	//d_ellg->jcoeff + d_ellg->nell
 	unsigned long long units_IndexType = total_nell + d_ellg->n;
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
@@ -249,7 +249,7 @@ std::vector<REAL> spmv_HLL_sequential(struct hll_t* d_hll, const std::vector<REA
 	//d_hll->jcoeff + d_hll->nell + d_hll->hoff
 	unsigned long long units_IndexType = total_nell + d_hll->n + d_hll->n;
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{

@@ -50,7 +50,7 @@ std::vector<REAL> spmv_HYB_ELL_sequential(struct hybellg_t* d_hyb, const std::ve
 		units_IndexType += d_hyb->csr.n + d_hyb->csr.nnz;
 	}
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
@@ -234,7 +234,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
-					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
+					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
 		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
@@ -280,7 +280,7 @@ std::vector<REAL> spmv_HYB_ELLG_sequential(struct hybellg_t* d_hyb, const std::v
 		units_IndexType += d_hyb->csr.n + d_hyb->csr.nnz;
 	}
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
@@ -472,7 +472,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
-					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
+					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
 		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
@@ -519,7 +519,7 @@ std::vector<REAL> spmv_HYB_HLL_sequential(struct hybhll_t* d_hyb, const std::vec
 		units_IndexType += d_hyb->csr.n + d_hyb->csr.nnz;
 	}
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
@@ -723,7 +723,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
-					cl::NDRange(1500 * CSR_WORKGROUP_SIZE),
+					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
 		}
 		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);

@@ -40,7 +40,7 @@ std::vector<REAL> spmv_DIA_sequential(struct dia_t* d_dia, const std::vector<REA
 	//d_dia->ioff
 	unsigned long long units_IndexType = d_dia->ndiags * d_dia->n;
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
@@ -50,7 +50,7 @@ std::vector<REAL> spmv_DIA_sequential(struct dia_t* d_dia, const std::vector<REA
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), 0 , 0);
+	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 
 	return dst_y;
 }
@@ -171,7 +171,7 @@ std::vector<REAL> spmv_HDIA_sequential(struct hdia_t* d_hdia, const std::vector<
 	//d_dia->ioff + d_hdia->memoff + d_hdia->ndiags + d_hdia->hoff
 	unsigned long long units_IndexType = total_ndiags + d_hdia->n + d_hdia->n + d_hdia->n;
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{

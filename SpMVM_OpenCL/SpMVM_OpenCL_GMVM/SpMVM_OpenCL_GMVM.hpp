@@ -29,7 +29,7 @@ std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<RE
 	//d_mat->val + d_x + dst_y
 	unsigned long long units_REAL = 3 * d_mat->n * d_mat->n;
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{

@@ -37,7 +37,7 @@ std::vector<REAL> spmv_JAD_sequential(struct jad_t* d_jad, const std::vector<REA
 	//jad->ia + jad->ja + jad->njad + jad->perm
 	unsigned long long units_IndexType = d_jad->njad[d_jad->n] + d_jad->nnz + 2 * d_jad->njad[d_jad->n] * d_jad->n + d_jad->nnz;
 	//
-	unsigned long nanoseconds = 0, total_nanoseconds = 0;
+	unsigned long long nanoseconds = 0, total_nanoseconds = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{

@@ -5,7 +5,7 @@
 /*-------------------------------- Double-precision----------------------------------*/
 __kernel void spmv_gmvm(
 	__global double* d_val,
-	__constant double* d_x,
+	__global double* d_x,
 	__global double* dst_y,
 	__local double* sharedx)
 {
@@ -47,7 +47,7 @@ __kernel void spmv_gmvm(
 /*-------------------------------- Single-precision----------------------------------*/
 __kernel void spmv_gmvm(
 	__global float* d_val,
-	__constant float* d_x,
+	__global float* d_x,
 	__global float* dst_y,
 	__local float* sharedx)
 {
