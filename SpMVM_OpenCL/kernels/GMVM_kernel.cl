@@ -31,7 +31,7 @@ __kernel void spmv_gmvm(
 #else
 #pragma unroll
 #endif
-		for (j = 0; j < WORKGROUP_SIZE; q = global_id + (++j + WORKGROUP_SIZE * i) * N_MATRIX)
+		for (j = 0; j < WORKGROUP_SIZE; q = global_id + ((++j) + WORKGROUP_SIZE * i) * N_MATRIX)
 		{
 			if (q < NN_MATRIX)
 				r += d_val[q] * sharedx[j];
@@ -73,7 +73,7 @@ __kernel void spmv_gmvm(
 #else
 #pragma unroll
 #endif
-		for (j = 0; j < WORKGROUP_SIZE; q = global_id + (++j + WORKGROUP_SIZE * i) * N_MATRIX)
+		for (j = 0; j < WORKGROUP_SIZE; q = global_id + ((++j) + WORKGROUP_SIZE * i) * N_MATRIX)
 		{
 			if (q < NN_MATRIX)
 				r += d_val[q] * sharedx[j];

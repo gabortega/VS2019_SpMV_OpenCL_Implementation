@@ -67,6 +67,8 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + GMVM_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_gmvm" };
 	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	//
 	size_t byte_size_d_val = (unsigned long)d_mat->n * d_mat->n * sizeof(CL_REAL);
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);

@@ -54,9 +54,6 @@
 #define WORKGROUP_SIZE 256 // default is 256
 #define WARPS_PER_WORKGROUP (WORKGROUP_SIZE / WARP_SIZE)
 //
-// required for spmv_coo_reduce_update
-#define __WORKGROUP_SIZE 512
-//
 // Repeat kernel operation for evaluating performace
 #define REPEAT 200
 //
@@ -111,7 +108,7 @@
 //
 #define GENERATOR_FOLDER "random"
 #define RANDOM_INPUT_FILE "random_spread_4.mtx"
-#define SUITE_RANDOM_INPUT_FILES "imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx" //same as above but for randomly generated matrices
+#define SUITE_RANDOM_INPUT_FILES "very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
 //
 #define OUTPUT_FOLDER "../output"
 //
