@@ -31,7 +31,7 @@ unsigned long HDIA_sequential(struct hdia_t* d_hdia, std::vector<REAL> d_x, std:
 		{
 			long q = d_hdia->ioff[row_hoff + j] + i;
 			if (q >= 0 && q < d_hdia->n)
-				sum += d_hdia->diags[row_memoff + i + (j * HDIA_HACKSIZE)] * d_x[q];
+				sum += d_hdia->diags[row_memoff + i + (j * d_hdia->stride)] * d_x[q];
 		}
 		dst_y[i] = sum;
 	}

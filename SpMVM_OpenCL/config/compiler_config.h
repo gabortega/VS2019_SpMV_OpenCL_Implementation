@@ -11,13 +11,13 @@
 //
 // This setting is required in order to pre-allocate sufficient space
 // for the diag array of the DIA format.
-#define MAX_DIAG 10000 // default is 10000
+#define MAX_DIAG 20480 // default is 20480
 // same but for HDIA
-#define MAX_HDIAG 10000 // default is 10000
+#define MAX_HDIAG 20480 // default is 20480
 // same but for ELLG
-#define MAX_ELLG 10000 // default is 10000
+#define MAX_ELLG 20480 // default is 20480
 // same but for HLL
-#define MAX_HLL 10000 // default is 10000
+#define MAX_HLL 20480 // default is 20480
 //
 // Size of 'hacks' for hacked formats 
 // should be multiple of WARP_SIZE
@@ -48,6 +48,7 @@
 #define HLL_KERNEL_FILE "HLL_kernel.cl"
 #define DIA_KERNEL_FILE "DIA_kernel.cl"
 #define HDIA_KERNEL_FILE "HDIA_kernel.cl"
+#define HDIA_OLD_KERNEL_FILE "HDIA_OLD_kernel.cl"
 //
 //#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048 !!! NO LONGER USED !!!
 #define WARP_SIZE 32
@@ -62,7 +63,8 @@
 #define MAX_NJAD_PER_WG 1024 // default is 256
 // same but for DIA
 #define MAX_NDIAG_PER_WG 1024 // default is 256
-//
+// same but for HDIA
+#define MAX_NDIAG_PER_HACK 1024 // default is 256
 //
 // CSR Parameters
 #define CSR_WORKGROUP_SIZE 128 // default is 128
@@ -78,6 +80,7 @@
 #define DIA 1
 #define HDIA_SEQ 1
 #define HDIA 1
+#define HDIA_OLD 1
 //
 #define ELL_SEQ 1
 #define ELL 1
@@ -100,7 +103,7 @@
 /*--------------------------------------------------*/
 //            Input/Output related
 //
-#define INPUT_FILE_MODE 1 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
+#define INPUT_FILE_MODE 0 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
 //
 #define INPUT_FOLDER "../input"
 #define INPUT_FILE "sherman3.mtx"
@@ -108,7 +111,9 @@
 //
 #define GENERATOR_FOLDER "random"
 #define RANDOM_INPUT_FILE "random_spread_4.mtx"
-#define SUITE_RANDOM_INPUT_FILES "very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
+#define SUITE_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx" //same as above but for randomly generated matrices
+//#define SUITE_RANDOM_INPUT_FILES "imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
+//#define SUITE_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx;random_spread_4.mtx;imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
 //
 #define OUTPUT_FOLDER "../output"
 //
@@ -161,6 +166,7 @@
 #define DIA_OUTPUT_LOG 1
 #define HDIA_SEQ_OUTPUT_LOG 1
 #define HDIA_OUTPUT_LOG 1
+#define HDIA_OLD_OUTPUT_LOG 1
 //
 #define HYB_ELL_SEQ_OUTPUT_LOG 1
 #define HYB_ELL_OUTPUT_LOG 1

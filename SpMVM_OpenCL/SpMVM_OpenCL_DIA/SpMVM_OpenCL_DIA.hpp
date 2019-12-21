@@ -105,7 +105,7 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	cl_ulong size;
 	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 	//
-	size_t local_byte_size_shia = MAX_NDIAG_PER_WG * sizeof(cl_uint);
+	size_t local_byte_size_shia = MAX_NDIAG_PER_WG * sizeof(cl_int);
 	//
 	queue.enqueueWriteBuffer(d_ioff_buffer, CL_TRUE, 0, byte_size_d_ioff, d_dia->ioff);
 	queue.enqueueWriteBuffer(d_diags_buffer, CL_TRUE, 0, byte_size_d_diags, d_dia->diags);
@@ -124,10 +124,10 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	for (int r = 0; r < REPEAT; r++)
 	{
 		nanoseconds = 0;
-		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		for (IndexType i = 0; i < d_dia->ndiags; i += MAX_NDIAG_PER_WG)
 		{
-			kernel.setArg(0, min(d_dia->ndiags - i, MAX_NDIAG_PER_WG)); // set njad for this iteration
+			kernel.setArg(0, min(d_dia->ndiags - i, MAX_NDIAG_PER_WG)); // set ndiag for this iteration
 			kernel.setArg(6, i);
 			kernel.setArg(7, i * d_dia->stride);
 			nanoseconds +=
@@ -215,17 +215,132 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
-	IndexType unroll_val;
+	IndexType unroll_val, padded_matrix;
 	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
 	//
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
 						" -DN_MATRIX=" + std::to_string(d_hdia->n) +
+						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
+						" -DMAX_NDIAG=" + std::to_string(MAX_NDIAG_PER_HACK) +
 						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
-						" -DUNROLL=" + std::to_string(unroll_val);
+						" -DNHOFF=" + std::to_string(d_hdia->nhoff - 1) +
+						" -DUNROLL=" + std::to_string(unroll_val) +
+						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_hdia" };
+	//
+	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	//
+	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
+	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);
+	size_t byte_size_d_diags = *(d_hdia->memoff + d_hdia->nhoff - 1) * sizeof(CL_REAL);
+	size_t byte_size_d_hoff = d_hdia->nhoff * sizeof(cl_uint);
+	size_t byte_size_d_memoff = d_hdia->nhoff * sizeof(cl_uint);
+	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
+	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
+	//
+	cl::Buffer d_ndiags_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_ndiags };
+	cl::Buffer d_ioff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_ioff };
+	cl::Buffer d_diags_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_diags };
+	cl::Buffer d_hoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_hoff };
+	cl::Buffer d_memoff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_memoff };
+	cl::Buffer d_x_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_x };
+	cl::Buffer dst_y_buffer{ context, CL_MEM_WRITE_ONLY, byte_size_dst_y };
+	//
+	cl_ulong size;
+	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
+	//
+	size_t local_byte_size_shioff = ((WORKGROUP_SIZE + HDIA_HACKSIZE - 1) / HDIA_HACKSIZE) * MAX_NDIAG_PER_HACK * sizeof(cl_int);
+	//
+	queue.enqueueWriteBuffer(d_ndiags_buffer, CL_TRUE, 0, byte_size_d_ndiags, d_hdia->ndiags);
+	queue.enqueueWriteBuffer(d_ioff_buffer, CL_TRUE, 0, byte_size_d_ioff, d_hdia->ioff);
+	queue.enqueueWriteBuffer(d_diags_buffer, CL_TRUE, 0, byte_size_d_diags, d_hdia->diags);
+	queue.enqueueWriteBuffer(d_hoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hdia->hoff);
+	queue.enqueueWriteBuffer(d_memoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hdia->memoff);
+	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
+	//
+	kernel.setArg(1, d_ndiags_buffer);
+	kernel.setArg(2, d_ioff_buffer);
+	kernel.setArg(3, d_diags_buffer);
+	kernel.setArg(4, d_hoff_buffer);
+	kernel.setArg(5, d_memoff_buffer);
+	kernel.setArg(6, d_x_buffer);
+	kernel.setArg(7, dst_y_buffer);
+	kernel.setArg(8, cl::Local(local_byte_size_shioff));
+	//
+	cl_ulong nanoseconds;
+	cl_ulong total_nanoseconds = 0;
+	//
+	std::cout << "!!! A work-group uses " << local_byte_size_shioff << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+	for (int r = 0; r < REPEAT; r++)
+	{
+		nanoseconds = 0;
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
+		for (IndexType i = 0; i < *(d_hdia->ndiags + d_hdia->nhoff - 1) - 1; i += MAX_NDIAG_PER_HACK)
+		{
+			kernel.setArg(0, MAX_NDIAG_PER_HACK); // set ndiag for this iteration
+			kernel.setArg(9, i);
+			kernel.setArg(10, i * d_hdia->stride);
+			nanoseconds +=
+				jc::run_and_time_kernel(kernel,
+					queue,
+					cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
+					cl::NDRange(WORKGROUP_SIZE));
+		}
+		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+		total_nanoseconds += nanoseconds;
+	}
+	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+
+	return dst_y;
+}
+#endif
+
+
+#if HDIA_OLD
+std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
+{
+	std::vector<CL_REAL> dst_y(d_x.size(), 0);
+	unsigned long long ioff_access = 0, total_ndiags = 0;
+	IndexType row_hack_id, ndiags, row_hoff;
+	for (IndexType i = 0; i < d_hdia->n; i++)
+	{
+		row_hack_id = i / HDIA_HACKSIZE;
+		total_ndiags += ndiags = d_hdia->ndiags[row_hack_id];
+		row_hoff = d_hdia->hoff[row_hack_id];
+
+		for (IndexType j = 0; j < ndiags; j++)
+		{
+			long q = d_hdia->ioff[row_hoff + j] + i;
+			if (q >= 0 && q < d_hdia->n)
+				ioff_access += 1;
+		}
+	}
+	//d_dia->diags + d_x + dst_y
+	unsigned long long units_REAL = 2 * ioff_access + d_hdia->n;
+	//d_dia->ioff + d_hdia->memoff + d_hdia->ndiags + d_hdia->hoff
+	unsigned long long units_IndexType = total_ndiags + d_hdia->n + d_hdia->n + d_hdia->n;
+	//
+	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	cl::Context context{ device };
+	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
+	//
+	IndexType unroll_val;
+	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+		" -DN_MATRIX=" + std::to_string(d_hdia->n) +
+		" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
+		" -DUNROLL=" + std::to_string(unroll_val);
+	//
+	cl::Program program =
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_OLD_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_hdia" };
 	//
 	std::cout << "Kernel macros: " << macro << std::endl << std::endl;

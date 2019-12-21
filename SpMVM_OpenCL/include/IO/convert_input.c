@@ -560,11 +560,11 @@ int CSR_To_DIA(struct csr_t *csr, struct dia_t *dia, int log)
 	/*------------------ Allocate DIA */
 	dia->n = n;
 	/*------------ pad each diag to be multiple of the WARP_SIZE */
-	dia->stride = (n+ WARP_SIZE-1)/ WARP_SIZE * WARP_SIZE;
+	dia->stride = (n + WARP_SIZE - 1)/ WARP_SIZE * WARP_SIZE;
 	dia->diags = (REAL*) malloc(dia->stride * MAX_DIAG * sizeof(REAL));
 	dia->ioff = (int*) malloc(MAX_DIAG * sizeof(int));
 	/*--------------- work array */
-	int* ind = (IndexType*) malloc((2*n-1)*sizeof(int));
+	int* ind = (int*) malloc((2*n-1)*sizeof(int));
 
 	// (taken from SpMV Fortran code)
 	long n2, ii, k, j, i, l;
@@ -687,7 +687,7 @@ int CSR_To_HDIA(struct csr_t* csr, struct hdia_t* hdia, int log)
 	hdia->ioff = (int*)malloc((hoff_size - 1) * ndiags * sizeof(int));
 	hdia->hoff = (IndexType*)malloc(hoff_size * sizeof(IndexType));
 	/*--------------- work array */
-	int* ind = (IndexType*)malloc((2 * n - 1) * sizeof(int));
+	int* ind = (int*)malloc((2 * n - 1) * sizeof(int));
 	// (based off DIA & HLL code)
 	long hack, lowerb, higherb, n2, ii, k, j, i, l, memoff, k1;
 	//
@@ -769,6 +769,7 @@ int CSR_To_HDIA(struct csr_t* csr, struct hdia_t* hdia, int log)
 		hdia->diags = (REAL*)realloc(hdia->diags, memoff * sizeof(REAL));
 		hdia->ioff = (int*)realloc(hdia->ioff, *(hdia->hoff + hdia->nhoff - 1) * sizeof(int));
 		hdia->nnz = csr->nnz;
+		hdia->stride = HDIA_HACKSIZE;
 
 		if (log)
 		{

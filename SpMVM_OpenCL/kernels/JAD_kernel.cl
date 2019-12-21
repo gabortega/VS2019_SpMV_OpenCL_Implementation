@@ -2,61 +2,19 @@
 // URL: https://www-users.cs.umn.edu/~saad/software/CUDA_ITSOL/CUDA_ITSOL.tar.gz
 //
 #if PRECISION == 2
-/*-------------------------------- Double-precision----------------------------------*/
-__kernel void spmv_jad(unsigned int njad,
-	__constant unsigned int* d_njad,
-	__constant unsigned int* d_ia,
-	__constant unsigned int* d_ja,
-	__constant double* d_a,
-	__constant unsigned int* d_perm,
-	__constant double* d_x,
-	__global double* dst_y,
-	__local unsigned int* sharedia,
-	unsigned int ia_offset)
-{
-	__private unsigned int row_id = get_global_id(0);
-	__private unsigned int local_row_id = get_local_id(0);
-
-	__private unsigned int i, j;
-	__private long p, q;
-	__private double r;
-
-#pragma unroll(UNROLL_SHARED)
-	for (i = local_row_id; i < njad + 1; i += WORKGROUP_SIZE)
-		sharedia[i] = d_ia[ia_offset + i];
-	barrier(CLK_LOCAL_MEM_FENCE);
-
-	if (row_id >= N_MATRIX || ia_offset > d_njad[d_perm[row_id]]) return;
-
-	r = 0.0;
-	p = sharedia[0];
-	q = sharedia[1];
-	i = 0;
-#pragma unroll(1)
-	while (((p + row_id) < q) && (i < njad))
-	{
-		j = p + row_id;
-		r += d_a[j] * d_x[d_ja[j]];
-		i++;
-		if (i < njad)
-		{
-			p = q;
-			q = sharedia[i + 1];
-		}
-	}
-	dst_y[d_perm[row_id]] += r;
-}
-
+#define REAL double
 #else
-/*-------------------------------- Single-precision----------------------------------*/
+#define REAL float
+#endif
+
 __kernel void spmv_jad(unsigned int njad,
 	__constant unsigned int* d_njad,
 	__constant unsigned int* d_ia,
 	__constant unsigned int* d_ja,
-	__constant float* d_a,
+	__constant REAL* d_a,
 	__constant unsigned int* d_perm,
-	__constant float* d_x,
-	__global float* dst_y,
+	__constant REAL* d_x,
+	__global REAL* dst_y,
 	__local unsigned int* sharedia,
 	unsigned int ia_offset)
 {
@@ -65,14 +23,14 @@ __kernel void spmv_jad(unsigned int njad,
 
 	__private unsigned int i, j;
 	__private long p, q;
-	__private float r;
+	__private REAL r;
 
 #pragma unroll(UNROLL_SHARED)
 	for (i = local_row_id; i < njad + 1; i += WORKGROUP_SIZE)
 		sharedia[i] = d_ia[ia_offset + i];
 	barrier(CLK_LOCAL_MEM_FENCE);
 
-	if (row_id >= N_MATRIX || ia_offset > d_njad[d_perm[row_id]]) return;
+	if (row_id >= N_MATRIX || ia_offset >= d_njad[d_perm[row_id]]) return;
 
 	r = 0.0;
 	p = sharedia[0];
@@ -92,4 +50,3 @@ __kernel void spmv_jad(unsigned int njad,
 	}
 	dst_y[d_perm[row_id]] += r;
 }
-#endif

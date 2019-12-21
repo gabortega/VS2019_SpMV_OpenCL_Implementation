@@ -175,6 +175,7 @@
   <ItemGroup>
     <None Include="..\kernels\DIA_kernel.cl" />
     <None Include="..\kernels\HDIA_kernel.cl" />
+    <None Include="..\kernels\HDIA_OLD_kernel.cl" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SpMVM_INPUT_LIB\SpMVM_INPUT_LIB.vcxproj">

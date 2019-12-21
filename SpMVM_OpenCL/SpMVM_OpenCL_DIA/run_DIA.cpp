@@ -24,7 +24,7 @@
 
 int main(void)
 {
-#if DIA_SEQ || DIA || HDIA_SEQ || HDIA
+#if DIA_SEQ || DIA || HDIA_SEQ || HDIA || HDIA_OLD
 	// Error checking
 #if DIA
 	if (WORKGROUP_SIZE > MAX_NDIAG_PER_WG)
@@ -70,7 +70,7 @@ int main(void)
 	if (!CSR_To_DIA(&csr, &dia, DIA_LOG))
 		std::cout << "DIA IS INCOMPLETE" << std::endl;
 #endif
-#if HDIA_SEQ || HDIA
+#if HDIA_SEQ || HDIA || HDIA_OLD
 	if (!CSR_To_HDIA(&csr, &hdia, HDIA_LOG))
 		std::cout << "HDIA IS INCOMPLETE" << std::endl;
 #endif
@@ -130,6 +130,18 @@ int main(void)
 	}
 	std::cout << std::endl;
 #endif
+#if HDIA_OLD
+	std::cout << std::endl << "-- STARTING HDIA (OLD) KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y5 = spmv_HDIA_OLD(&hdia, x);
+	std::cout << std::endl << "-- FINISHED HDIA (OLD) KERNEL OPERATION --" << std::endl << std::endl;
+	if (HDIA_OLD_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y5.size(); i++)
+			std::cout << y5[i] << " ";
+	}
+	std::cout << std::endl;
+#endif
 
 	x.clear();
 #if DIA_SEQ || DIA
@@ -148,6 +160,9 @@ int main(void)
 #endif
 #if HDIA
 	y4.clear();
+#endif
+#if HDIA_OLD
+	y5.clear();
 #endif
 #endif
 #endif

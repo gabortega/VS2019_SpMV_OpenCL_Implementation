@@ -104,7 +104,7 @@ std::vector<CL_REAL> spmv_ELL(struct ellg_t* d_ell, const std::vector<CL_REAL> d
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
-		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
@@ -214,7 +214,7 @@ std::vector<CL_REAL> spmv_ELLG(struct ellg_t* d_ellg, const std::vector<CL_REAL>
     //
     for (int r = 0; r < REPEAT; r++)
     {
-        queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
+        queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
         nanoseconds =
             jc::run_and_time_kernel(kernel,
                 queue,
@@ -335,7 +335,7 @@ std::vector<CL_REAL> spmv_HLL(struct hll_t* d_hll, const std::vector<CL_REAL> d_
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
-		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,

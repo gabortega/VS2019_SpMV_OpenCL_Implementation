@@ -220,7 +220,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 	for (int r = 0; r < REPEAT; r++)
 	{
 		nanoseconds = 0;
-		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		if (d_hyb->ellg.nnz > 0)
 		{
 			nanoseconds +=
@@ -458,7 +458,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 	for (int r = 0; r < REPEAT; r++)
 	{
 		nanoseconds = 0;
-		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		if (d_hyb->ellg.nnz > 0)
 		{
 			nanoseconds +=
@@ -709,7 +709,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 	for (int r = 0; r < REPEAT; r++)
 	{
 		nanoseconds = 0;
-		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_d_x, dst_y.data());
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		if (d_hyb->hll.nnz > 0)
 		{
 			nanoseconds +=
