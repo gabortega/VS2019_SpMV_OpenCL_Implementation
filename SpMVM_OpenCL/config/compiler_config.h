@@ -7,7 +7,10 @@
 // This setting sets the precision of the floating point calculations:
 // 1 = single-precision
 // 2 = double-precision
-#define PRECISION 1
+#define PRECISION 2
+//
+// Use constant memory
+#define USE_CONSTANT_MEM 1
 //
 // This setting is required in order to pre-allocate sufficient space
 // for the diag array of the DIA format.
@@ -79,7 +82,7 @@
 #define DIA_SEQ 1
 #define DIA 1
 #define HDIA_SEQ 1
-#define HDIA 1
+#define HDIA 0
 #define HDIA_OLD 1
 //
 #define ELL_SEQ 1
@@ -106,8 +109,8 @@
 #define INPUT_FILE_MODE 0 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
 //
 #define INPUT_FOLDER "../input"
-#define INPUT_FILE "sherman3.mtx"
-#define SUITE_INPUT_FILES "sherman3.mtx;psmigr_1.mtx;msc01050.mtx;dynamicSoaringProblem_1.mtx" //delimiter is ;
+#define INPUT_FILE "dynamicSoaringProblem_1.mtx"
+#define SUITE_INPUT_FILES "dynamicSoaringProblem_1.mtx" //delimiter is ;
 //
 #define GENERATOR_FOLDER "random"
 #define RANDOM_INPUT_FILE "random_spread_4.mtx"

@@ -9,10 +9,17 @@
 #endif
 
 __kernel void spmv_csr(
+#if USE_CONSTANT_MEM
 	__constant unsigned int* d_ia,
 	__constant unsigned int* d_ja,
 	__constant REAL* d_a,
 	__constant REAL* d_x,
+#else
+	__global unsigned int* d_ia,
+	__global unsigned int* d_ja,
+	__global REAL* d_a,
+	__global REAL* d_x,
+#endif
 	__global REAL* dst_y,
 	__local volatile REAL* shareddata)
 {

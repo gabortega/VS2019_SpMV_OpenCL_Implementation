@@ -71,6 +71,12 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	unsigned long long units_IndexType = ((d_jad->njad[d_jad->n] + 1) * (jc::best_fit(d_jad->n, WORKGROUP_SIZE) + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) + d_jad->nnz + 3 * d_jad->n * for_iters;
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//

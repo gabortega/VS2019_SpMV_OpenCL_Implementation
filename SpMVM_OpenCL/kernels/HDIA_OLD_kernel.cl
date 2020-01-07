@@ -5,12 +5,21 @@
 #endif
 
 __kernel void spmv_hdia(
+#if USE_CONSTANT_MEM
 	__constant unsigned int* d_ndiags,
 	__constant int* d_ioff,
 	__constant REAL* d_diags,
 	__constant unsigned int* d_hoff,
 	__constant unsigned int* d_memoff,
 	__constant REAL* d_x,
+#else
+	__global unsigned int* d_ndiags,
+	__global int* d_ioff,
+	__global REAL* d_diags,
+	__global unsigned int* d_hoff,
+	__global unsigned int* d_memoff,
+	__global REAL* d_x,
+#endif
 	__global REAL* dst_y)
 {
 	__private unsigned int row_id = get_global_id(0);

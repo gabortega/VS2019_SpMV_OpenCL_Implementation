@@ -65,6 +65,12 @@ std::vector<CL_REAL> spmv_ELL(struct ellg_t* d_ell, const std::vector<CL_REAL> d
 	unsigned long long units_IndexType = d_ell->n * d_ell->nell[d_ell->n];
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
@@ -172,6 +178,12 @@ std::vector<CL_REAL> spmv_ELLG(struct ellg_t* d_ellg, const std::vector<CL_REAL>
 	unsigned long long units_IndexType = total_nell + d_ellg->n;
     //
     cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
     cl::Context context{ device };
     cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
@@ -285,6 +297,12 @@ std::vector<CL_REAL> spmv_HLL(struct hll_t* d_hll, const std::vector<CL_REAL> d_
 	unsigned long long units_IndexType = total_nell + d_hll->n + d_hll->n;
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//

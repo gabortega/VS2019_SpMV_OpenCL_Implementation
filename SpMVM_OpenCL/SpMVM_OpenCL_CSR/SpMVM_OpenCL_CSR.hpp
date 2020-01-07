@@ -75,6 +75,12 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 	unsigned long long units_IndexType = d_csr->n + d_csr->nnz;
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//

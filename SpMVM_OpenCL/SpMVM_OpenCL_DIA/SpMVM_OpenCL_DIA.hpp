@@ -76,6 +76,12 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	unsigned long long units_IndexType = (d_dia->ndiags * (jc::best_fit(d_dia->n, WORKGROUP_SIZE) + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE);
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
@@ -212,11 +218,14 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	unsigned long long units_IndexType = total_ndiags + d_hdia->n + d_hdia->n + d_hdia->n;
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
-	//
-	IndexType unroll_val, padded_matrix;
-	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
 	//
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
@@ -225,7 +234,6 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 						" -DMAX_NDIAG=" + std::to_string(MAX_NDIAG_PER_HACK) +
 						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
 						" -DNHOFF=" + std::to_string(d_hdia->nhoff - 1) +
-						" -DUNROLL=" + std::to_string(unroll_val) +
 						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
 	//
 	cl::Program program =
@@ -327,11 +335,17 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 	unsigned long long units_IndexType = total_ndiags + d_hdia->n + d_hdia->n + d_hdia->n;
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	std::cout << "OpenCL device: " << deviceName << std::endl;
+	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	IndexType unroll_val;
-	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
+	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff - 1) / 2) >= unroll_val; unroll_val <<= 1);
 	//
 	//Macro
 	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +

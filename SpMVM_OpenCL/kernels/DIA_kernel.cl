@@ -8,9 +8,15 @@
 #endif
 
 __kernel void spmv_dia(__private unsigned int ndiags,
+#if USE_CONSTANT_MEM
 	__constant int* d_ioff,
 	__constant REAL* d_diags,
 	__constant REAL* d_x,
+#else
+	__global int* d_ioff,
+	__global REAL* d_diags,
+	__global REAL* d_x,
+#endif
 	__global REAL* dst_y,
 	__local int* sharedioff,
 	__private unsigned int ioff_offset,
