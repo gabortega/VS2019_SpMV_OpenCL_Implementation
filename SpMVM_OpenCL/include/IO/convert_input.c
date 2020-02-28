@@ -195,7 +195,7 @@ void COO_To_CSR(struct coo_t *coo, struct csr_t *csr, int log)
 		fprintf(stdout, "\n");
 		fprintf(stdout, "csr->ia: \n");
 		for (i = 0; i < csr->n + 1; i++)
-			fprintf(stdout, "%d ", csr->ia[i]);
+			fprintf(stdout, "%d ", csr->ia[i]); 
 		fprintf(stdout, "\n");
 	}
 }
@@ -997,6 +997,74 @@ void CSR_To_HYBHLL(struct csr_t* csr, struct hybhll_t* hyb, int log)
 		fprintf(stdout, "hyb->csr.ia: \n");
 		for (i = 0; i < hyb->csr.n + 1; i++)
 			fprintf(stdout, "%d ", hyb->csr.ia[i]);
+		fprintf(stdout, "\n");
+	}
+}
+
+void transpose_ELLG(struct ellg_t* ellg, int log)
+{
+	REAL* transp_a = (REAL*)malloc(*(ellg->nell + ellg->n) * ellg->stride * sizeof(REAL));
+	IndexType* transp_jcoeff = (IndexType*)malloc(*(ellg->nell + ellg->n) * ellg->stride * sizeof(IndexType));
+
+	IndexType index = 0;
+	for (int i = 0; i < ellg->n; i++)
+		for (int j = 0; j < *(ellg->nell + ellg->n); j++)
+		{
+			*(transp_jcoeff + index) = *(ellg->jcoeff + (j * ellg->stride + i));
+			*(transp_a + index++) = *(ellg->a + (j * ellg->stride + i));
+		}
+
+	free(ellg->a);
+	free(ellg->jcoeff);
+	ellg->a = transp_a;
+	ellg->jcoeff = transp_jcoeff;
+
+	if (log)
+	{
+		fprintf(stdout, "ELL-G: Matrix N = %d, NNZ = %d\n", ellg->n, ellg->nnz);
+
+		fprintf(stdout, "ellg->nell: ");
+		for (IndexType i = 0; i < ellg->n + 2; i++)
+			fprintf(stdout, "%d ", ellg->nell[i]);
+		fprintf(stdout, "\n");
+
+		fprintf(stdout, "ellg->a: ");
+		for (IndexType i = 0; i < ellg->stride * *(ellg->nell + ellg->n); i++)
+			fprintf(stdout, "%g ", ellg->a[i]);
+		fprintf(stdout, "\n");
+
+		fprintf(stdout, "ellg->jcoeff: ");
+		for (IndexType i = 0; i < ellg->stride * *(ellg->nell + ellg->n); i++)
+			fprintf(stdout, "%d ", ellg->jcoeff[i]);
+		fprintf(stdout, "\n");
+	}
+}
+
+void transpose_DIA(struct dia_t* dia, int log)
+{
+	REAL* transp_diags = (REAL*)malloc(dia->ndiags * dia->stride * sizeof(REAL));
+
+	IndexType index = 0;
+	for (int i = 0; i < dia->n; i++)
+		for (int j = 0; j < dia->ndiags; j++)
+			*(transp_diags + index++) = *(dia->diags + (j * dia->stride + i));
+
+	free(dia->diags);
+	dia->diags = transp_diags;
+
+	if (log)
+	{
+		fprintf(stdout, "DIA: Matrix N = %d, NNZ = %d\n", dia->n, dia->nnz);
+		fprintf(stdout, "dia->ndiags: %d\n", dia->ndiags);
+
+		fprintf(stdout, "dia->diags: ");
+		for (IndexType i = 0; i < dia->stride * dia->ndiags; i++)
+			fprintf(stdout, "%g ", dia->diags[i]);
+		fprintf(stdout, "\n");
+
+		fprintf(stdout, "dia->ioff: ");
+		for (IndexType i = 0; i < dia->ndiags; i++)
+			fprintf(stdout, "%d ", dia->ioff[i]);
 		fprintf(stdout, "\n");
 	}
 }

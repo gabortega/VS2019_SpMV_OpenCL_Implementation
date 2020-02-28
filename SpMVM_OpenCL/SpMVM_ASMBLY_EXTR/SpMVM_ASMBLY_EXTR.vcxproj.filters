@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{bd2bb051-4f9b-4631-8f6c-88c8b104776c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4f6cc342-0794-4dbd-b275-c0aa9449194b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{d7d9c8b6-25fb-4974-82e6-fcc550b5e8d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\compiler_config">
+      <UniqueIdentifier>{92abe0e9-651e-4838-8c4c-149cf31ae3b0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="SpMVM_ASMBLY_EXTR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\config\compiler_config.h">
+      <Filter>Header Files\compiler_config</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

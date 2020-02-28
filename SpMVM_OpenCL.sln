@@ -21,6 +21,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpMVM_INPUT_LIB", "SpMVM_Op
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpMVM_OpenCL_SUITE", "SpMVM_OpenCL\SpMVM_OpenCL_SUITE\SpMVM_OpenCL_SUITE.vcxproj", "{14600BFB-9E7F-4CF7-88FF-D6B2CAD8D67A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpMVM_ASMBLY_EXTR", "SpMVM_OpenCL\SpMVM_ASMBLY_EXTR\SpMVM_ASMBLY_EXTR.vcxproj", "{76047BE6-6B27-47CB-869B-8DC955C482E9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -121,6 +123,16 @@ Global
 		{14600BFB-9E7F-4CF7-88FF-D6B2CAD8D67A}.Release|x64.Build.0 = Release|x64
 		{14600BFB-9E7F-4CF7-88FF-D6B2CAD8D67A}.Release|x86.ActiveCfg = Release|Win32
 		{14600BFB-9E7F-4CF7-88FF-D6B2CAD8D67A}.Release|x86.Build.0 = Release|Win32
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Debug|x64.ActiveCfg = Debug|x64
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Debug|x64.Build.0 = Debug|x64
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Debug|x86.ActiveCfg = Debug|Win32
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Debug|x86.Build.0 = Debug|Win32
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Release|Any CPU.ActiveCfg = Release|Win32
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Release|x64.ActiveCfg = Release|x64
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Release|x64.Build.0 = Release|x64
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Release|x86.ActiveCfg = Release|Win32
+		{76047BE6-6B27-47CB-869B-8DC955C482E9}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

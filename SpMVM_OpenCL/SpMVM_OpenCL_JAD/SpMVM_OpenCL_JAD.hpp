@@ -32,6 +32,9 @@ std::vector<REAL> spmv_JAD_sequential(struct jad_t* d_jad, const std::vector<REA
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]--;
 	//
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_jad->n, d_jad->nnz);
+	//
 	//jad->a + d_x + dst_y
 	unsigned long long units_REAL = d_jad->nnz + d_jad->nnz + d_jad->nnz;
 	//jad->ia + jad->ja + jad->njad + jad->perm
@@ -75,7 +78,6 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -90,7 +92,7 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + JAD_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_jad" };
 	//
-	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_jad->n, d_jad->nnz, deviceName, macro);
 	//
 	size_t byte_size_d_njad = d_jad->n * sizeof(cl_uint);
 	size_t byte_size_d_ia = (d_jad->njad[d_jad->n] + 1) * sizeof(cl_uint);

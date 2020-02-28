@@ -25,6 +25,9 @@
 std::vector<REAL> spmv_DIA_sequential(struct dia_t* d_dia, const std::vector<REAL> d_x)
 {
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_dia->n, d_dia->nnz);
+	//
 	unsigned long long ioff_access = 0;
 	for (IndexType i = 0; i < d_dia->n; i++)
 	{
@@ -80,7 +83,6 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -96,7 +98,103 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + DIA_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_dia" };
 	//
-	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_dia->n, d_dia->nnz, deviceName, macro);
+	//
+	size_t byte_size_d_ioff = d_dia->ndiags * sizeof(cl_int);
+	size_t byte_size_d_diags = d_dia->stride * d_dia->ndiags * sizeof(CL_REAL);
+	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
+	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
+	//
+	cl::Buffer d_ioff_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_ioff };
+	cl::Buffer d_diags_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_diags };
+	cl::Buffer d_x_buffer{ context, CL_MEM_READ_ONLY, byte_size_d_x };
+	cl::Buffer dst_y_buffer{ context, CL_MEM_WRITE_ONLY, byte_size_dst_y };
+	//
+	cl_ulong size;
+	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
+	//
+	size_t local_byte_size_shia = MAX_NDIAG_PER_WG * sizeof(cl_int);
+	//
+	queue.enqueueWriteBuffer(d_ioff_buffer, CL_TRUE, 0, byte_size_d_ioff, d_dia->ioff);
+	queue.enqueueWriteBuffer(d_diags_buffer, CL_TRUE, 0, byte_size_d_diags, d_dia->diags);
+	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
+	//
+	kernel.setArg(1, d_ioff_buffer);
+	kernel.setArg(2, d_diags_buffer);
+	kernel.setArg(3, d_x_buffer);
+	kernel.setArg(4, dst_y_buffer);
+	kernel.setArg(5, cl::Local(local_byte_size_shia));
+	//
+	cl_ulong nanoseconds;
+	cl_ulong total_nanoseconds = 0;
+	//
+	std::cout << "!!! A work-group uses " << local_byte_size_shia << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+	for (int r = 0; r < REPEAT; r++)
+	{
+		nanoseconds = 0;
+		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
+		for (IndexType i = 0; i < d_dia->ndiags; i += MAX_NDIAG_PER_WG)
+		{
+			kernel.setArg(0, min(d_dia->ndiags - i, MAX_NDIAG_PER_WG)); // set ndiag for this iteration
+			kernel.setArg(6, i);
+			kernel.setArg(7, i * d_dia->stride);
+			nanoseconds +=
+				jc::run_and_time_kernel(kernel,
+					queue,
+					cl::NDRange(jc::best_fit(d_dia->n, WORKGROUP_SIZE)),
+					cl::NDRange(WORKGROUP_SIZE));
+		}
+		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+		total_nanoseconds += nanoseconds;
+	}
+	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
+	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
+	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+
+	return dst_y;
+}
+#endif
+
+#if TRANSPOSED_DIA
+std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_x)
+{
+	std::vector<CL_REAL> dst_y(d_x.size(), 0);
+	unsigned long long ioff_access = 0;
+	for (IndexType i = 0; i < d_dia->n; i++)
+	{
+		for (IndexType j = 0; j < d_dia->ndiags; j++)
+		{
+			long q = i + d_dia->ioff[j];
+			if (q >= 0 && q < d_dia->n)
+				ioff_access += 1;
+		}
+	}
+	//d_dia->diags + d_x + dst_y
+	unsigned long long units_REAL = 2 * ioff_access + d_dia->n;
+	//d_dia->ioff
+	unsigned long long units_IndexType = (d_dia->ndiags * (jc::best_fit(d_dia->n, WORKGROUP_SIZE) + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE);
+	//
+	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
+	//
+	//Print GPU used
+	std::string deviceName;
+	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
+	//
+	cl::Context context{ device };
+	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
+	//
+	//Macro
+	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+						" -DN_MATRIX=" + std::to_string(d_dia->n) +
+						" -DSTRIDE_MATRIX=" + std::to_string(d_dia->stride) +
+						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
+						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
+	//
+	cl::Program program =
+		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_DIA_KERNEL_FILE, context, device, macro.c_str());
+	cl::Kernel kernel{ program, "spmv_transposed_dia" };
+	//
+	printHeaderInfoGPU(d_dia->n, d_dia->nnz, deviceName, macro);
 	//
 	size_t byte_size_d_ioff = d_dia->ndiags * sizeof(cl_int);
 	size_t byte_size_d_diags = d_dia->stride * d_dia->ndiags * sizeof(CL_REAL);
@@ -157,6 +255,9 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 std::vector<REAL> spmv_HDIA_sequential(struct hdia_t* d_hdia, const std::vector<REAL> d_x)
 {
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_hdia->n, d_hdia->nnz);
+	//
 	unsigned long long ioff_access = 0, total_ndiags = 0;
 	IndexType row_hack_id, ndiags, row_hoff;
 	for (IndexType i = 0; i < d_hdia->n; i++)
@@ -222,7 +323,6 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -240,7 +340,7 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_hdia" };
 	//
-	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_hdia->n, d_hdia->nnz, deviceName, macro);
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);
@@ -309,7 +409,6 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 }
 #endif
 
-
 #if HDIA_OLD
 std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
 {
@@ -339,7 +438,6 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -357,7 +455,7 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_OLD_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_hdia" };
 	//
-	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_hdia->n, d_hdia->nnz, deviceName, macro);
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);

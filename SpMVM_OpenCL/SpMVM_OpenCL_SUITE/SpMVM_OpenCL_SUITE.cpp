@@ -164,7 +164,7 @@ int main(void)
         FreeMAT(&mat);
 #endif
         // -------------------------------------------- CSR struct
-#if CSR || DIA_SEQ || DIA || HDIA_SEQ || HDIA || ELL_SEQ || ELL || ELLG || HLL_SEQ || HLL || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
+#if CSR || DIA_SEQ || DIA || TRANSPOSED_DIA || HDIA_SEQ || HDIA || ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG || HLL_SEQ || HLL || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
         std::cout << "-- (CSR) PRE-PROCESSING INPUT --" << std::endl;
         COO_To_CSR(&coo, &csr, CSR_LOG);
         FreeCOO(&coo);
@@ -198,7 +198,7 @@ int main(void)
         std::cout << std::endl;
 #endif
         // -------------------------------------------- DIA struct
-#if DIA_SEQ || DIA
+#if DIA_SEQ || DIA || TRANSPOSED_DIA
         std::cout << "-- (DIA) PRE-PROCESSING INPUT --" << std::endl;
         if (!CSR_To_DIA(&csr, &dia, DIA_LOG))
             std::cout << "DIA IS INCOMPLETE" << std::endl;
@@ -231,6 +231,19 @@ int main(void)
         std::cout << std::endl;
         y.clear();
         std::cout << std::endl;
+#endif
+#if TRANSPOSED_DIA
+        transpose_DIA(&dia, TRANSPOSED_DIA_LOG);
+        std::cout << std::endl << "-- STARTING TRANSPOSED DIA KERNEL OPERATION --" << std::endl << std::endl;
+        std::vector<CL_REAL> y6 = spmv_TRANSPOSED_DIA(&dia, x);
+        std::cout << std::endl << "-- FINISHED TRANSPOSED DIA KERNEL OPERATION --" << std::endl << std::endl;
+        if (TRANSPOSED_DIA_OUTPUT_LOG)
+        {
+            std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+            for (IndexType i = 0; i < y6.size(); i++)
+                std::cout << y6[i] << " ";
+            std::cout << std::endl;
+        }
 #endif
         FreeDIA(&dia);
 #endif
@@ -282,7 +295,7 @@ int main(void)
         FreeHDIA(&hdia);
 #endif
         // -------------------------------------------- ELLG struct
-#if ELL_SEQ || ELL || ELLG_SEQ || ELLG
+#if ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG
         std::cout << "-- (ELL-G) PRE-PROCESSING INPUT --" << std::endl;
         if (!CSR_To_ELLG(&csr, &ellg, ELLG_LOG))
             std::cout << "ELL-G HAS BEEN TRUNCATED" << std::endl;
@@ -342,6 +355,33 @@ int main(void)
         }
         y.clear();
         std::cout << std::endl;
+#endif
+#if TRANSPOSED_ELL || TRANSPOSED_ELLG
+        transpose_ELLG(&ellg, TRANSPOSED_ELLG_LOG);
+#if TRANSPOSED_ELL
+        std::cout << std::endl << "-- STARTING TRANSPOSED ELL KERNEL OPERATION --" << std::endl << std::endl;
+        y = spmv_TRANSPOSED_ELL(&ellg, x);
+        std::cout << std::endl << "-- FINISHED TRANSPOSED ELL KERNEL OPERATION --" << std::endl << std::endl;
+        if (TRANSPOSED_ELL_OUTPUT_LOG)
+        {
+            std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+            for (IndexType i = 0; i < y.size(); i++)
+                std::cout << y[i] << " ";
+            std::cout << std::endl;
+        }
+#endif
+#if TRANSPOSED_ELLG
+        std::cout << std::endl << "-- STARTING TRANSPOSED ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+        y = spmv_TRANSPOSED_ELLG(&ellg, x);
+        std::cout << std::endl << "-- FINISHED TRANSPOSED ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+        if (TRANSPOSED_ELLG_OUTPUT_LOG)
+        {
+            std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+            for (IndexType i = 0; i < y.size(); i++)
+                std::cout << y[i] << " ";
+            std::cout << std::endl;
+        }
+#endif
 #endif
         FreeELLG(&ellg);
 #endif

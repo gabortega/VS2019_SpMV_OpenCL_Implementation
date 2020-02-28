@@ -145,7 +145,12 @@ int CSR_To_HDIA(struct csr_t* csr, struct hdia_t* hdia, int log);
 void CSR_To_HYBELLG(struct csr_t* coo, struct hybellg_t* hyb, int log);
 void CSR_To_HYBHLL(struct csr_t* coo, struct hybhll_t* hyb, int log);
 
-void dcsort(IndexType* ival, IndexType n, long* icnt, IndexType* index, long ilo, long ihi);
+void transpose_ELLG(struct ellg_t* ellg, int log);
+void transpose_HLL(struct hll_t* hll, int log);
+void transpose_DIA(struct dia_t* dia, int log);
+void transpose_HDIA(struct hdia_t* hdia, int log);
+
+void dcsort(IndexType* ival, IndexType n, IndexType* icnt, IndexType* index, long ilo, long ihi);
 void PadJADWARP(struct jad_t* jadg);
 void infdia(IndexType n, IndexType* ja, IndexType* ia, IndexType* ind, IndexType idiag);
 void hinfdia(IndexType lowerb, IndexType higherb, IndexType n, IndexType* ja, IndexType* ia, IndexType* ind, IndexType idiag);

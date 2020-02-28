@@ -34,6 +34,9 @@ std::vector<REAL> spmv_HYB_ELL_sequential(struct hybellg_t* d_hyb, const std::ve
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
 	//
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_hyb->n, d_hyb->nnz);
+	//
 	unsigned long long units_REAL = 0, units_IndexType = 0;
 	if (d_hyb->ellg.nnz > 0)
 	{
@@ -120,7 +123,6 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -144,8 +146,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, ell_macro.c_str());
 	cl::Kernel kernel_ell{ program_ell, "spmv_ell" };
 	//
-	std::cout << "CSR kernel macros: " << csr_macro << std::endl << std::endl;
-	std::cout << "ELL kernel macros: " << ell_macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + ell_macro);
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -267,6 +268,9 @@ std::vector<REAL> spmv_HYB_ELLG_sequential(struct hybellg_t* d_hyb, const std::v
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
 	//
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_hyb->n, d_hyb->nnz);
+	//
 	unsigned long long units_REAL = 0, units_IndexType = 0;
 	if (d_hyb->ellg.nnz > 0)
 	{
@@ -359,7 +363,6 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -382,8 +385,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, ellg_macro.c_str());
 	cl::Kernel kernel_ellg{ program_ellg, "spmv_ellg" };
 	//
-	std::cout << "CSR kernel macros: " << csr_macro << std::endl << std::endl;
-	std::cout << "ELL-G kernel macros: " << ellg_macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + ellg_macro);
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -512,6 +514,9 @@ std::vector<REAL> spmv_HYB_HLL_sequential(struct hybhll_t* d_hyb, const std::vec
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]--;
 	//
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_hyb->n, d_hyb->nnz);
+	//
 	unsigned long long units_REAL = 0, units_IndexType = 0;
 	if (d_hyb->hll.nnz > 0)
 	{
@@ -606,7 +611,6 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -633,8 +637,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, hll_macro.c_str());
 	cl::Kernel kernel_hll{ program_hll, "spmv_hll" };
 	//
-	std::cout << "CSR kernel macros: " << csr_macro << std::endl << std::endl;
-	std::cout << "HLL kernel macros: " << hll_macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + hll_macro);
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);

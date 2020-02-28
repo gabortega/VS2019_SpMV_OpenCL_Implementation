@@ -53,6 +53,10 @@
 #define HDIA_KERNEL_FILE "HDIA_kernel.cl"
 #define HDIA_OLD_KERNEL_FILE "HDIA_OLD_kernel.cl"
 //
+#define TRANSPOSED_ELL_KERNEL_FILE "TRANSPOSED_ELL_kernel.cl"
+#define TRANSPOSED_ELLG_KERNEL_FILE "TRANSPOSED_ELLG_kernel.cl"
+#define TRANSPOSED_DIA_KERNEL_FILE "TRANSPOSED_DIA_kernel.cl"
+//
 //#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048 !!! NO LONGER USED !!!
 #define WARP_SIZE 32
 #define WORKGROUP_SIZE 256 // default is 256
@@ -73,34 +77,39 @@
 #define CSR_WORKGROUP_SIZE 128 // default is 128
 //
 // Kernels to run (0: Off; 1: On)
-#define GMVM_SEQ 1
-#define GMVM 1
+#define GMVM_SEQ 0
+#define GMVM 0
 //
-#define CSR_SEQ 1
-#define CSR 1
+#define CSR_SEQ 0
+#define CSR 0
 //
-#define DIA_SEQ 1
+#define DIA_SEQ 0
 #define DIA 1
-#define HDIA_SEQ 1
+#define HDIA_SEQ 0
 #define HDIA 0
-#define HDIA_OLD 1
+#define HDIA_OLD 0
 //
-#define ELL_SEQ 1
+#define ELL_SEQ 0
 #define ELL 1
-#define ELLG_SEQ 1
+#define ELLG_SEQ 0
 #define ELLG 1
-#define HLL_SEQ 1
-#define HLL 1
+#define HLL_SEQ 0
+#define HLL 0
 //
-#define HYB_ELL_SEQ 1
-#define HYB_ELL 1
-#define HYB_ELLG_SEQ 1
-#define HYB_ELLG 1
-#define HYB_HLL_SEQ 1
-#define HYB_HLL 1
+#define HYB_ELL_SEQ 0
+#define HYB_ELL 0
+#define HYB_ELLG_SEQ 0
+#define HYB_ELLG 0
+#define HYB_HLL_SEQ 0
+#define HYB_HLL 0
 //
-#define JAD_SEQ 1
-#define JAD 1
+#define JAD_SEQ 0
+#define JAD 0
+//
+#define TRANSPOSED_ELL 1
+#define TRANSPOSED_ELLG 1
+#define TRANSPOSED_DIA 1
+//
 /*--------------------------------------------------*/
 
 /*--------------------------------------------------*/
@@ -111,12 +120,17 @@
 #define INPUT_FOLDER "../input"
 #define INPUT_FILE "dynamicSoaringProblem_1.mtx"
 #define SUITE_INPUT_FILES "dynamicSoaringProblem_1.mtx" //delimiter is ;
+#define EXTR_INPUT_FILES "dynamicSoaringProblem_1.mtx" //delimiter is ;
 //
 #define GENERATOR_FOLDER "random"
 #define RANDOM_INPUT_FILE "random_spread_4.mtx"
 #define SUITE_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx" //same as above but for randomly generated matrices
 //#define SUITE_RANDOM_INPUT_FILES "imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
 //#define SUITE_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx;random_spread_4.mtx;imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
+//
+#define EXTR_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx" //same as above but for randomly generated matrices
+//#define EXTR_RANDOM_INPUT_FILES "imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
+//#define EXTR_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx;random_spread_4.mtx;imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
 //
 #define OUTPUT_FOLDER "../output"
 //
@@ -129,9 +143,11 @@
 #define DIA_OUTPUT_FOLDER "DIA"
 #define HYB_OUTPUT_FOLDER "HYB"
 #define SUITE_OUTPUT_FOLDER "SUITE"
+#define EXTR_OUTPUT_FOLDER "EXTR"
 //
 #define OUTPUT_FILENAME "output"
 #define OUTPUT_FILEFORMAT ".txt"
+#define EXTR_OUTPUT_FILEFORMAT ".ptx"
 //
 // Print out data about each storage format (WARNING: AVOID FOR VERY LARGE MATRICES!)
 #define COO_LOG 0
@@ -144,6 +160,8 @@
 #define HDIA_LOG 0
 #define HYB_ELLG_LOG 0
 #define HYB_HLL_LOG 0
+#define TRANSPOSED_ELLG_LOG 0
+#define TRANSPOSED_DIA_LOG 0
 //
 // Print out output data for each kernel
 #define COO_SEQ_OUTPUT_LOG 1
@@ -177,6 +195,11 @@
 #define HYB_ELLG_OUTPUT_LOG 1
 #define HYB_HLL_SEQ_OUTPUT_LOG 1
 #define HYB_HLL_OUTPUT_LOG 1
+//
+#define TRANSPOSED_ELL_OUTPUT_LOG 1
+#define TRANSPOSED_ELLG_OUTPUT_LOG 1
+//
+#define TRANSPOSED_DIA_OUTPUT_LOG 1
 //
 /*--------------------------------------------------*/
 #endif

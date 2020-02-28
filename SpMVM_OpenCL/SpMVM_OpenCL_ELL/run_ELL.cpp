@@ -24,14 +24,14 @@
 
 int main(void)
 {
-#if ELL_SEQ || ELL || ELLG_SEQ || ELLG || HLL_SEQ || HLL
+#if ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG || HLL_SEQ || HLL
 	// Error checking
 	// TODO?
 
 	FILE* f;
 	struct coo_t coo;
 	struct csr_t csr;
-#if ELL_SEQ || ELL || ELLG_SEQ || ELLG
+#if ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG
 	struct ellg_t ellg;
 #endif
 #if HLL_SEQ || HLL
@@ -59,7 +59,7 @@ int main(void)
 	std::cout << "-- INPUT FILE LOADED --" << std::endl << std::endl;
 	std::cout << "-- PRE-PROCESSING INPUT --" << std::endl;
 	COO_To_CSR(&coo, &csr, CSR_LOG);
-#if ELL_SEQ || ELL || ELLG_SEQ || ELLG
+#if ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG
 	if (!CSR_To_ELLG(&csr, &ellg, ELLG_LOG))
 		std::cout << "ELL-G HAS BEEN TRUNCATED" << std::endl;
 #endif
@@ -122,6 +122,33 @@ int main(void)
 			std::cout << y4[i] << " ";
 		std::cout << std::endl;
 	}
+#endif
+#if TRANSPOSED_ELL || TRANSPOSED_ELLG
+	transpose_ELLG(&ellg, TRANSPOSED_ELLG_LOG);
+#if TRANSPOSED_ELL
+	std::cout << std::endl << "-- STARTING TRANSPOSED ELL KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y7 = spmv_TRANSPOSED_ELL(&ellg, x);
+	std::cout << std::endl << "-- FINISHED TRANSPOSED ELL KERNEL OPERATION --" << std::endl << std::endl;
+	if (TRANSPOSED_ELL_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y7.size(); i++)
+			std::cout << y7[i] << " ";
+		std::cout << std::endl;
+	}
+#endif
+#if TRANSPOSED_ELLG
+	std::cout << std::endl << "-- STARTING TRANSPOSED ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y8 = spmv_TRANSPOSED_ELLG(&ellg, x);
+	std::cout << std::endl << "-- FINISHED TRANSPOSED ELL-G KERNEL OPERATION --" << std::endl << std::endl;
+	if (TRANSPOSED_ELLG_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y8.size(); i++)
+			std::cout << y8[i] << " ";
+		std::cout << std::endl;
+	}
+#endif
 #endif
 #if HLL_SEQ
 	std::cout << std::endl << "-- STARTING HLL SEQUENTIAL OPERATION --" << std::endl << std::endl;

@@ -58,5 +58,11 @@
     <None Include="..\kernels\HLL_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
+    <None Include="..\kernels\TRANSPOSED_ELL_kernel.cl">
+      <Filter>Source Files\kernel</Filter>
+    </None>
+    <None Include="..\kernels\TRANSPOSED_ELLG_kernel.cl">
+      <Filter>Source Files\kernel</Filter>
+    </None>
   </ItemGroup>
 </Project>

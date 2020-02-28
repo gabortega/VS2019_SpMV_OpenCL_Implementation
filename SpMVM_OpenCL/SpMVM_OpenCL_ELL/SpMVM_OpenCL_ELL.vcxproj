@@ -177,6 +177,8 @@
     <None Include="..\kernels\ELLG_kernel.cl" />
     <None Include="..\kernels\ELL_kernel.cl" />
     <None Include="..\kernels\HLL_kernel.cl" />
+    <None Include="..\kernels\TRANSPOSED_ELLG_kernel.cl" />
+    <None Include="..\kernels\TRANSPOSED_ELL_kernel.cl" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SpMVM_INPUT_LIB\SpMVM_INPUT_LIB.vcxproj">

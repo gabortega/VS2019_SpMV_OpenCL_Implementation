@@ -4,7 +4,7 @@
 #define REAL float
 #endif
 
-__kernel void spmv_ellg(
+__kernel void spmv_transposed_ellg(
 #if USE_CONSTANT_MEM
 	__constant unsigned int* d_nell,
 	__constant unsigned int* d_jcoeff,
@@ -19,7 +19,7 @@ __kernel void spmv_ellg(
 	__global REAL* dst_y)
 {
 	__private unsigned int row_id = get_global_id(0);
-	
+
 	if (row_id >= N_MATRIX) return;
 
 	__private unsigned int row_nell = d_nell[row_id];
@@ -31,7 +31,7 @@ __kernel void spmv_ellg(
 #pragma unroll(5)
 	for (i = 0; i < row_nell; i++)
 	{
-		j = i * STRIDE_MATRIX + row_id;
+		j = row_id * MAX_NELL + i;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
 	dst_y[row_id] = r;

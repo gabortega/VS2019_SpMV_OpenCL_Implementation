@@ -28,6 +28,9 @@ std::vector<REAL> spmv_CSR_sequential(struct csr_t* d_csr, const std::vector<REA
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]--;
 	//
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_csr->n, d_csr->nnz);
+	//
 	//d_csr->a + d_x + dst_y
 	unsigned long long units_REAL = d_csr->nnz + d_csr->nnz + d_csr->nnz;
 	//d_csr->ia + d_csr->ja
@@ -79,7 +82,6 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -95,7 +97,7 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_csr" };
 	//
-	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_csr->n, d_csr->nnz, deviceName, macro);
 	//
 	size_t byte_size_d_ia = (d_csr->n + 1) * sizeof(cl_uint);
 	size_t byte_size_d_ja = d_csr->nnz * sizeof(cl_uint);

@@ -82,9 +82,10 @@
       <CompileAs>Default</CompileAs>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
+      <AdditionalDependencies>pthreadVC2.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Windows</SubSystem>
       <EntryPointSymbol>main</EntryPointSymbol>
+      <AdditionalLibraryDirectories>$(SolutionDir)SpMVM_OpenCL\lib\OpenCL\x64;$(SolutionDir)SpMVM_OpenCL\lib\pthread\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -94,7 +95,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
+      <AdditionalDependencies>pthreadVC2.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SpMVM_OpenCL\lib\OpenCL\x86;$(SolutionDir)SpMVM_OpenCL\lib\pthread\x86</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -104,7 +106,8 @@
       <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
+      <AdditionalDependencies>pthreadVC2.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)SpMVM_OpenCL\lib\OpenCL\x86;$(SolutionDir)SpMVM_OpenCL\lib\pthread\x86</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -114,8 +117,9 @@
       <AdditionalIncludeDirectories>$(SolutionDir)SpMVM_OpenCL\include;$(SolutionDir)SpMVM_OpenCL\config</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies />
+      <AdditionalDependencies>pthreadVC2.lib;OpenCL.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;pthreadVC2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>main</EntryPointSymbol>
+      <AdditionalLibraryDirectories>$(SolutionDir)SpMVM_OpenCL\lib\OpenCL\x64;$(SolutionDir)SpMVM_OpenCL\lib\pthread\x64</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

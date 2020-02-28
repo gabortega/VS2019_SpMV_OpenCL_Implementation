@@ -55,5 +55,8 @@
     <None Include="..\kernels\HDIA_OLD_kernel.cl">
       <Filter>Source Files\kernel</Filter>
     </None>
+    <None Include="..\kernels\TRANSPOSED_DIA_kernel.cl">
+      <Filter>Source Files\kernel</Filter>
+    </None>
   </ItemGroup>
 </Project>

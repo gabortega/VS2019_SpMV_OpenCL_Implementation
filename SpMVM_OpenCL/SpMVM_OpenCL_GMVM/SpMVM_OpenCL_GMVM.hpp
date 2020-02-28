@@ -26,6 +26,9 @@
 std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<REAL> d_x)
 {
 	std::vector<REAL> dst_y(d_x.size(), 0);
+	//
+	printHeaderInfoSEQ(d_mat->n, d_mat->nnz);
+	//
 	//d_mat->val + d_x + dst_y
 	unsigned long long units_REAL = 3 * d_mat->n * d_mat->n;
 	//
@@ -57,7 +60,6 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 	//Print GPU used
 	std::string deviceName;
 	device.getInfo<std::string>(CL_DEVICE_NAME, &deviceName);
-	std::cout << "OpenCL device: " << deviceName << std::endl;
 	//
 	cl::Context context{ device };
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
@@ -73,7 +75,7 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + GMVM_KERNEL_FILE, context, device, macro.c_str());
 	cl::Kernel kernel{ program, "spmv_gmvm" };
 	//
-	std::cout << "Kernel macros: " << macro << std::endl << std::endl;
+	printHeaderInfoGPU(d_mat->n, d_mat->nnz, deviceName, macro);
 	//
 	size_t byte_size_d_val = (unsigned long)d_mat->n * d_mat->n * sizeof(CL_REAL);
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);

@@ -24,9 +24,9 @@
 
 int main(void)
 {
-#if DIA_SEQ || DIA || HDIA_SEQ || HDIA || HDIA_OLD
+#if DIA_SEQ || DIA || TRANSPOSED_DIA || HDIA_SEQ || HDIA || HDIA_OLD
 	// Error checking
-#if DIA
+#if DIA || TRANSPOSED_DIA
 	if (WORKGROUP_SIZE > MAX_NDIAG_PER_WG)
 	{
 		std::cout << "!!! ERROR: WORKGROUP_SIZE CANNOT BE GREATER THAN MAX_NDIAG_PER_WG !!!" << std::endl;
@@ -38,7 +38,7 @@ int main(void)
 	FILE* f;
 	struct coo_t coo;
 	struct csr_t csr;
-#if DIA_SEQ || DIA
+#if DIA_SEQ || DIA || TRANSPOSED_DIA
 	struct dia_t dia;
 #endif
 #if HDIA_SEQ || HDIA
@@ -66,7 +66,7 @@ int main(void)
 	std::cout << "-- INPUT FILE LOADED --" << std::endl << std::endl;
 	std::cout << "-- PRE-PROCESSING INPUT --" << std::endl;
 	COO_To_CSR(&coo, &csr, CSR_LOG);
-#if DIA_SEQ || DIA
+#if DIA_SEQ || DIA || TRANSPOSED_DIA
 	if (!CSR_To_DIA(&csr, &dia, DIA_LOG))
 		std::cout << "DIA IS INCOMPLETE" << std::endl;
 #endif
@@ -103,6 +103,19 @@ int main(void)
 		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
 		for (IndexType i = 0; i < y2.size(); i++)
 			std::cout << y2[i] << " ";
+		std::cout << std::endl;
+	}
+#endif
+#if TRANSPOSED_DIA
+	transpose_DIA(&dia, TRANSPOSED_DIA_LOG);
+	std::cout << std::endl << "-- STARTING TRANSPOSED DIA KERNEL OPERATION --" << std::endl << std::endl;
+	std::vector<CL_REAL> y6 = spmv_TRANSPOSED_DIA(&dia, x);
+	std::cout << std::endl << "-- FINISHED TRANSPOSED DIA KERNEL OPERATION --" << std::endl << std::endl;
+	if (TRANSPOSED_DIA_OUTPUT_LOG)
+	{
+		std::cout << std::endl << "-- PRINTING OUTPUT VECTOR RESULTS --" << std::endl;
+		for (IndexType i = 0; i < y6.size(); i++)
+			std::cout << y6[i] << " ";
 		std::cout << std::endl;
 	}
 #endif

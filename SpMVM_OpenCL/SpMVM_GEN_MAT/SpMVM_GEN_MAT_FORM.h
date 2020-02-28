@@ -3,6 +3,7 @@
 #include<compiler_config.h>
 
 #include<util_misc.hpp>
+#include<CL/cl.h>
 #include<IO/generateMatrix.hpp>
 #include<IO/mmio.h>
 #include<IO/convert_input.h>
