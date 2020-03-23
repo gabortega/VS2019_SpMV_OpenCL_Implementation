@@ -139,8 +139,13 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
+#if !EXEC_WARP
 				cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 				cl::NDRange(CSR_WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}

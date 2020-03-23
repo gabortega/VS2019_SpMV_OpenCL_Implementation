@@ -141,8 +141,13 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(jc::best_fit(d_dia->n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
@@ -237,8 +242,13 @@ std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(jc::best_fit(d_dia->n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
@@ -395,8 +405,13 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
@@ -497,8 +512,13 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
+#if !EXEC_WARP
 				cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}

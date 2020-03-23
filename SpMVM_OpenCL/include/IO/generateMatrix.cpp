@@ -1,6 +1,6 @@
 #include "generateMatrix.hpp"
 
-void generateMatrixGaussMethodRow(long n, float row_mean, float row_stddev, struct coo_rand_t* coo, bool flip)
+void generateMatrixGaussMethodRow(long n, float row_mean, float row_stddev, struct coo_rand_t* coo, bool flip, bool zigzag)
 {
 	coo->n = n;
 	/*-------- Allocate mem for COO */
@@ -16,7 +16,9 @@ void generateMatrixGaussMethodRow(long n, float row_mean, float row_stddev, stru
 	std::normal_distribution<float> distribution(row_mean, row_stddev);
 	/*-------- Start/End Params */
 	long start = (flip) ? -(n - 1) : 0;
+	long start_flipped = (!flip) ? -(n - 1) : 0;
 	long end = (flip) ? 1 : n;
+	long end_flipped = (!flip) ? 1 : n;
 	/*-------- Create matrix */
 	long coo_index = 0;
 	for (long i = start; i < end; i++)
@@ -24,7 +26,7 @@ void generateMatrixGaussMethodRow(long n, float row_mean, float row_stddev, stru
 		float dist_row = distribution(generator);
 		if (dist_row > 0)
 		{
-			for (long j = start; j < end; j++)
+			for (long j = ((zigzag && i % 2 != 0) ? start_flipped : start); j < ((zigzag && i % 2 != 0) ? end_flipped : end); j++)
 			{
 				long roll_chance = (n + dist_row - 1) / dist_row;
 				if (dist_row_chance(generator) / roll_chance >= 1)
@@ -44,7 +46,7 @@ void generateMatrixGaussMethodRow(long n, float row_mean, float row_stddev, stru
 	coo->val = (float*)realloc(coo->val, coo_index * sizeof(float));
 }
 
-void generateMatrixGaussMethodCol(long n, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip)
+void generateMatrixGaussMethodCol(long n, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip, bool zigzag)
 {
 	coo->n = n;
 	/*-------- Allocate mem for COO */
@@ -60,7 +62,9 @@ void generateMatrixGaussMethodCol(long n, float col_mean, float col_stddev, stru
 	std::normal_distribution<float> distribution(col_mean, col_stddev);
 	/*-------- Start/End Params */
 	long start = (flip) ? -(n - 1) : 0;
+	long start_flipped = (!flip) ? -(n - 1) : 0;
 	long end = (flip) ? 1 : n;
+	long end_flipped = (!flip) ? 1 : n;
 	/*-------- Create matrix */
 	long coo_index = 0;
 	for (long j = start; j < end; j++)
@@ -68,7 +72,7 @@ void generateMatrixGaussMethodCol(long n, float col_mean, float col_stddev, stru
 		float dist_col = distribution(generator);
 		if (dist_col > 0)
 		{
-			for (long i = start; i < end; i++)
+			for (long i = ((zigzag && j % 2 != 0) ? start_flipped : start); i < ((zigzag && j % 2 != 0) ? end_flipped : end); i++)
 			{
 				long roll_chance = (n + dist_col - 1) / dist_col;
 				if (dist_col_chance(generator) / roll_chance >= 1)
@@ -88,7 +92,7 @@ void generateMatrixGaussMethodCol(long n, float col_mean, float col_stddev, stru
 	coo->val = (float*)realloc(coo->val, coo_index * sizeof(float));
 }
 
-void generateMatrixGaussMethodFull(long n, float row_mean, float row_stddev, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip)
+void generateMatrixGaussMethodFull(long n, float row_mean, float row_stddev, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip, bool zigzag)
 {
 	coo->n = n;
 	/*-------- Allocate mem for COO */
@@ -105,7 +109,9 @@ void generateMatrixGaussMethodFull(long n, float row_mean, float row_stddev, flo
 	std::normal_distribution<float> distribution_col(col_mean, col_stddev);
 	/*-------- Start/End Params */
 	long start = (flip) ? -(n - 1) : 0;
+	long start_flipped = (!flip) ? -(n - 1) : 0;
 	long end = (flip) ? 1 : n;
+	long end_flipped = (!flip) ? 1 : n;
 	/*-------- for each row & column*/
 	float* row_mod_array = (float*)malloc(n * sizeof(float));
 	float* col_mod_array = (float*)malloc(n * sizeof(float));
@@ -118,7 +124,7 @@ void generateMatrixGaussMethodFull(long n, float row_mean, float row_stddev, flo
 	long coo_index = 0;
 	for (long j = start; j < end; j++)
 	{
-		for (long i = start; i < end; i++)
+		for (long i = ((zigzag && j % 2 != 0) ? start_flipped : start); i < ((zigzag && j % 2 != 0) ? end_flipped : end); i++)
 		{
 			long dist_row = distribution_row(generator) - row_mod_array[abs(i)];
 			long dist_col = distribution_col(generator) - col_mod_array[abs(j)];
@@ -179,7 +185,7 @@ void generateMatrixImbalancedRow(long n, long start, long skip, struct coo_rand_
 	coo->val = (float*)realloc(coo->val, coo_index * sizeof(float));
 }
 
-void generateMatrixImbalancedCol(long n, long start, long skip, struct coo_rand_t* coo, bool flip)
+void generateMatrixImbalancedCol(long n, long start, long skip, struct coo_rand_t* coo, bool flip, bool zigzag)
 {
 	coo->n = n;
 	/*-------- Allocate mem for COO */
@@ -193,13 +199,16 @@ void generateMatrixImbalancedCol(long n, long start, long skip, struct coo_rand_
 	std::uniform_int_distribution<> dist_exp(-10, 10);
 	/*-------- Start/End Params */
 	long start_row = (flip) ? -(n - 1) : 0;
+	long start_row_flipped = (!flip) ? -(n - 1) : 0;
 	long start_col = (flip) ? -(n - start - 1) : start;
+	long start_col_flipped = (!flip) ? -(n - start - 1) : start;
 	long end = (flip) ? 1 : n;
+	long end_flipped = (!flip) ? 1 : n;
 	/*-------- Create matrix */
 	long coo_index = 0;
-	for (long j = start_col; j < end; j+=skip)
+	for (long i = start_row; i < end; i++)
 	{
-		for (long i = start_row; i < end; i++)
+		for (long j = ((zigzag && i % 2 != 0) ? start_col_flipped : start_col); j < ((zigzag && i % 2 != 0) ? end_flipped : end); j += skip)
 		{
 			coo->ir[coo_index] = abs(i) + 1;
 			coo->jc[coo_index] = abs(j) + 1;

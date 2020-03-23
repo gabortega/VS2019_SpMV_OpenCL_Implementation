@@ -116,8 +116,13 @@ std::vector<CL_REAL> spmv_ELL(struct ellg_t* d_ell, const std::vector<CL_REAL> d
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
+#if !EXEC_WARP
 				cl::NDRange(jc::best_fit(d_ell->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_ell->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
@@ -192,8 +197,13 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELL(struct ellg_t* d_ell, const std::vector
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
+#if !EXEC_WARP
 				cl::NDRange(jc::best_fit(d_ell->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_ell->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
@@ -310,8 +320,13 @@ std::vector<CL_REAL> spmv_ELLG(struct ellg_t* d_ellg, const std::vector<CL_REAL>
         nanoseconds =
             jc::run_and_time_kernel(kernel,
                 queue,
+#if !EXEC_WARP
 				cl::NDRange(jc::best_fit(d_ellg->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType);
         total_nanoseconds += nanoseconds;
     }
@@ -393,8 +408,13 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELLG(struct ellg_t* d_ellg, const std::vect
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
+#if !EXEC_WARP
 				cl::NDRange(jc::best_fit(d_ellg->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
@@ -522,8 +542,13 @@ std::vector<CL_REAL> spmv_HLL(struct hll_t* d_hll, const std::vector<CL_REAL> d_
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
+#if !EXEC_WARP
 				cl::NDRange(jc::best_fit(d_hll->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_hll->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}

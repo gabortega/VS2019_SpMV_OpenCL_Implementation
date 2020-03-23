@@ -99,6 +99,7 @@ namespace SpMVMGENMAT {
 	private: System::Windows::Forms::NumericUpDown^ numericUpDown7;
 	private: System::Windows::Forms::NumericUpDown^ numericUpDown6;
 	private: System::Windows::Forms::CheckBox^ checkBox1;
+	private: System::Windows::Forms::CheckBox^ checkBox2;
 
 	private:
 		/// <summary>
@@ -129,6 +130,7 @@ namespace SpMVMGENMAT {
 			this->label2 = (gcnew System::Windows::Forms::Label());
 			this->label1 = (gcnew System::Windows::Forms::Label());
 			this->groupBox3 = (gcnew System::Windows::Forms::GroupBox());
+			this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
 			this->numericUpDown3 = (gcnew System::Windows::Forms::NumericUpDown());
 			this->label5 = (gcnew System::Windows::Forms::Label());
 			this->label4 = (gcnew System::Windows::Forms::Label());
@@ -150,7 +152,7 @@ namespace SpMVMGENMAT {
 			this->label10 = (gcnew System::Windows::Forms::Label());
 			this->label11 = (gcnew System::Windows::Forms::Label());
 			this->folderBrowserDialog1 = (gcnew System::Windows::Forms::FolderBrowserDialog());
-			this->checkBox1 = (gcnew System::Windows::Forms::CheckBox());
+			this->checkBox2 = (gcnew System::Windows::Forms::CheckBox());
 			this->groupBox1->SuspendLayout();
 			this->groupBox8->SuspendLayout();
 			this->groupBox5->SuspendLayout();
@@ -176,7 +178,7 @@ namespace SpMVMGENMAT {
 			this->groupBox1->Controls->Add(this->groupBox8);
 			this->groupBox1->Controls->Add(this->groupBox5);
 			this->groupBox1->Controls->Add(this->groupBox4);
-			this->groupBox1->Location = System::Drawing::Point(13, 125);
+			this->groupBox1->Location = System::Drawing::Point(13, 139);
 			this->groupBox1->Name = L"groupBox1";
 			this->groupBox1->Size = System::Drawing::Size(399, 209);
 			this->groupBox1->TabIndex = 1;
@@ -327,6 +329,7 @@ namespace SpMVMGENMAT {
 			// 
 			// groupBox3
 			// 
+			this->groupBox3->Controls->Add(this->checkBox2);
 			this->groupBox3->Controls->Add(this->checkBox1);
 			this->groupBox3->Controls->Add(this->numericUpDown3);
 			this->groupBox3->Controls->Add(this->label5);
@@ -336,10 +339,20 @@ namespace SpMVMGENMAT {
 			this->groupBox3->Controls->Add(this->label3);
 			this->groupBox3->Location = System::Drawing::Point(13, 13);
 			this->groupBox3->Name = L"groupBox3";
-			this->groupBox3->Size = System::Drawing::Size(399, 106);
+			this->groupBox3->Size = System::Drawing::Size(399, 120);
 			this->groupBox3->TabIndex = 0;
 			this->groupBox3->TabStop = false;
 			this->groupBox3->Text = L"General";
+			// 
+			// checkBox1
+			// 
+			this->checkBox1->AutoSize = true;
+			this->checkBox1->Location = System::Drawing::Point(283, 19);
+			this->checkBox1->Name = L"checkBox1";
+			this->checkBox1->Size = System::Drawing::Size(78, 17);
+			this->checkBox1->TabIndex = 6;
+			this->checkBox1->Text = L"Flip matrix\?";
+			this->checkBox1->UseVisualStyleBackColor = true;
 			// 
 			// numericUpDown3
 			// 
@@ -362,7 +375,7 @@ namespace SpMVMGENMAT {
 			// label4
 			// 
 			this->label4->AutoSize = true;
-			this->label4->Location = System::Drawing::Point(6, 77);
+			this->label4->Location = System::Drawing::Point(6, 94);
 			this->label4->Name = L"label4";
 			this->label4->Size = System::Drawing::Size(92, 13);
 			this->label4->TabIndex = 4;
@@ -370,14 +383,14 @@ namespace SpMVMGENMAT {
 			// 
 			// textBox2
 			// 
-			this->textBox2->Location = System::Drawing::Point(104, 74);
+			this->textBox2->Location = System::Drawing::Point(104, 91);
 			this->textBox2->Name = L"textBox2";
 			this->textBox2->Size = System::Drawing::Size(289, 20);
 			this->textBox2->TabIndex = 5;
 			// 
 			// textBox1
 			// 
-			this->textBox1->Location = System::Drawing::Point(104, 48);
+			this->textBox1->Location = System::Drawing::Point(104, 65);
 			this->textBox1->Name = L"textBox1";
 			this->textBox1->ReadOnly = true;
 			this->textBox1->Size = System::Drawing::Size(289, 20);
@@ -386,7 +399,7 @@ namespace SpMVMGENMAT {
 			// label3
 			// 
 			this->label3->AutoSize = true;
-			this->label3->Location = System::Drawing::Point(6, 51);
+			this->label3->Location = System::Drawing::Point(6, 68);
 			this->label3->Name = L"label3";
 			this->label3->Size = System::Drawing::Size(74, 13);
 			this->label3->TabIndex = 2;
@@ -397,7 +410,7 @@ namespace SpMVMGENMAT {
 			this->groupBox2->Controls->Add(this->groupBox9);
 			this->groupBox2->Controls->Add(this->groupBox6);
 			this->groupBox2->Controls->Add(this->groupBox7);
-			this->groupBox2->Location = System::Drawing::Point(13, 340);
+			this->groupBox2->Location = System::Drawing::Point(13, 354);
 			this->groupBox2->Name = L"groupBox2";
 			this->groupBox2->Size = System::Drawing::Size(399, 209);
 			this->groupBox2->TabIndex = 2;
@@ -531,21 +544,22 @@ namespace SpMVMGENMAT {
 			this->label11->TabIndex = 0;
 			this->label11->Text = L"Start:";
 			// 
-			// checkBox1
+			// checkBox2
 			// 
-			this->checkBox1->AutoSize = true;
-			this->checkBox1->Location = System::Drawing::Point(298, 19);
-			this->checkBox1->Name = L"checkBox1";
-			this->checkBox1->Size = System::Drawing::Size(78, 17);
-			this->checkBox1->TabIndex = 6;
-			this->checkBox1->Text = L"Flip matrix\?";
-			this->checkBox1->UseVisualStyleBackColor = true;
+			this->checkBox2->AutoSize = true;
+			this->checkBox2->Location = System::Drawing::Point(283, 42);
+			this->checkBox2->Name = L"checkBox2";
+			this->checkBox2->Size = System::Drawing::Size(110, 17);
+			this->checkBox2->TabIndex = 7;
+			this->checkBox2->Text = L"Flip on each row\?";
+			this->checkBox2->TextAlign = System::Drawing::ContentAlignment::MiddleCenter;
+			this->checkBox2->UseVisualStyleBackColor = true;
 			// 
 			// SpMVM_GEN_MAT_FORM
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(424, 561);
+			this->ClientSize = System::Drawing::Size(424, 574);
 			this->Controls->Add(this->groupBox2);
 			this->Controls->Add(this->groupBox3);
 			this->Controls->Add(this->groupBox1);
@@ -604,7 +618,7 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixGaussMethodRow(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), &coo, this->checkBox1->Checked);
+		generateMatrixGaussMethodRow(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), &coo, this->checkBox1->Checked, this->checkBox2->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
 		FreeCOORAND(&coo);
@@ -624,7 +638,7 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixGaussMethodCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo, this->checkBox1->Checked);
+		generateMatrixGaussMethodCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo, this->checkBox1->Checked, this->checkBox2->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
 		FreeCOORAND(&coo);
@@ -644,7 +658,7 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixGaussMethodFull(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo, this->checkBox1->Checked);
+		generateMatrixGaussMethodFull(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToDouble(this->numericUpDown1->Value), System::Decimal::ToDouble(this->numericUpDown2->Value), System::Decimal::ToDouble(this->numericUpDown4->Value), System::Decimal::ToDouble(this->numericUpDown5->Value), &coo, this->checkBox1->Checked, this->checkBox2->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
 		FreeCOORAND(&coo);
@@ -688,7 +702,7 @@ namespace SpMVMGENMAT {
 			return;
 		}
 		//
-		generateMatrixImbalancedCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToUInt64(this->numericUpDown8->Value), System::Decimal::ToUInt64(this->numericUpDown9->Value), &coo, this->checkBox1->Checked);
+		generateMatrixImbalancedCol(System::Decimal::ToUInt64(this->numericUpDown3->Value), System::Decimal::ToUInt64(this->numericUpDown8->Value), System::Decimal::ToUInt64(this->numericUpDown9->Value), &coo, this->checkBox1->Checked, this->checkBox2->Checked);
 		COO_To_MM(&coo, gen_filename.c_str());
 		generateMatrixImage(&coo);
 		FreeCOORAND(&coo);

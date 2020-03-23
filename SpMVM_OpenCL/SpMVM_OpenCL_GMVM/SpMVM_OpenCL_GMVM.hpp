@@ -107,9 +107,14 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
-				queue,
+				queue, 
+#if !EXEC_WARP
 				cl::NDRange(jc::best_fit(d_mat->n, WORKGROUP_SIZE)),
 				cl::NDRange(WORKGROUP_SIZE));
+#else
+				cl::NDRange(WARP_SIZE),
+				cl::NDRange(WARP_SIZE));
+#endif
 		printRunInfo(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
 		total_nanoseconds += nanoseconds;
 	}

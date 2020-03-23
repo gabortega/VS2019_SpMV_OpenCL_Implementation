@@ -233,16 +233,26 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_ell,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		if (d_hyb->csr.nnz > 0)
 		{
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
@@ -478,16 +488,26 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_ellg,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		if (d_hyb->csr.nnz > 0)
 		{
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
@@ -736,16 +756,26 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_hll,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		if (d_hyb->csr.nnz > 0)
 		{
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
 					cl::NDRange(CSR_WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;

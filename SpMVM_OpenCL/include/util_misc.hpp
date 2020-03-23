@@ -38,6 +38,7 @@ void printHeaderInfoGPU(unsigned long long matrix_n, IndexType matrix_nnz, std::
 	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << "Operations count: " << 2 * matrix_nnz << std::endl << "OpenCL device: " << deviceName << std::endl << "Kernel macros: " << kernel_macros << std::endl << std::endl;
 }
 
+#if !EXEC_WARP
 void printRunInfo(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
 {
 	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << (2 * nnz / (nanoseconds / 1e9)) / 1e9 << " GFLOPS | Effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (nanoseconds / 1e9) / 1e9 << " GB/s\n";
@@ -47,6 +48,17 @@ void printAverageRunInfo(unsigned long long average_nanoseconds, unsigned long l
 {
 	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << (2 * nnz / (average_nanoseconds / 1e9)) / 1e9 << " GFLOPS | Average effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (average_nanoseconds / 1e9) / 1e9 << " GB/s\n";
 }
+#else
+void printRunInfo(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+{
+	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns\n";
+}
+
+void printAverageRunInfo(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+{
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+}
+#endif
 
 int createOutputDirectory(std::string outputDirRoot, std::string outputDir) {
 	int err;

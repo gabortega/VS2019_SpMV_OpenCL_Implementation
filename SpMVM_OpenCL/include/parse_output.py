@@ -5,7 +5,7 @@ def main():
 	args = len(sys.argv) - 1
 	if args > 0:
 		matrices = []
-		header = ["","GMVM_SEQ","GMVM","CSR_SEQ","CSR","DIA_SEQ","DIA","HDIA_SEQ","HDIA","ELL_SEQ","ELL","ELLG_SEQ","ELLG","HLL_SEQ","HLL","HYB-ELL_SEQ","HYB-ELL","HYB-ELLG_SEQ","HYB-ELLG","HYB-HLL_SEQ","HYB-HLL","JAD_SEQ","JAD"]
+		header = ["","GMVM_SEQ","GMVM","CSR_SEQ","CSR","DIA_SEQ","DIA","TRANSPOSED_DIA","HDIA_SEQ","HDIA","HDIA (OLD)","ELL_SEQ","ELL","TRANSPOSED_ELL","ELLG_SEQ","ELLG","TRANSPOSED_ELLG","HLL_SEQ","HLL","HYB-ELL_SEQ","HYB-ELL","HYB-ELLG_SEQ","HYB-ELLG","HYB-HLL_SEQ","HYB-HLL","JAD_SEQ","JAD"]
 		runtimes = []
 		gflops = []
 		gbps = []

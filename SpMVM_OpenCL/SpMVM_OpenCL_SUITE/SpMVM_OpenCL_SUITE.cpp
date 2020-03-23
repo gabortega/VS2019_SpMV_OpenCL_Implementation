@@ -30,7 +30,7 @@
 int main(void)
 {
     // Error checking
-#if CSR || DIA_SEQ || DIA || HDIA_SEQ || HDIA || ELL_SEQ || ELL || ELLG || HLL_SEQ || HLL || GMVM_SEQ || GMVM || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
+#if CSR || DIA_SEQ || DIA || TRANSPOSED_DIA || HDIA_SEQ || HDIA || HDIA_OLD || ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG || HLL_SEQ || HLL || GMVM_SEQ || GMVM || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
 #if DIA
     if (WORKGROUP_SIZE > MAX_NDIAG_PER_WG)
     {
@@ -53,15 +53,15 @@ int main(void)
 #if GMVM_SEQ || GMVM
     struct mat_t mat;
 #endif
-#if CSR_SEQ || CSR || DIA_SEQ || DIA || HDIA_SEQ || HDIA ||ELL_SEQ || ELL || ELLG_SEQ || ELLG || HLL_SEQ || HLL || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
+#if CSR_SEQ || CSR || DIA_SEQ || DIA || HDIA_SEQ || HDIA ||ELL_SEQ || ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG || HLL_SEQ || HLL || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
     struct csr_t csr;
-#if DIA_SEQ || DIA
+#if DIA_SEQ || DIA || TRANSPOSED_DIA
     struct dia_t dia;
 #endif
 #if HDIA_SEQ || HDIA || HDIA_OLD
     struct hdia_t hdia;
 #endif
-#if ELL_SEQ || ELL || ELLG_SEQ || ELLG
+#if ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG
     struct ellg_t ellg;
 #endif
 #if HLL_SEQ || HLL

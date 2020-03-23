@@ -9,11 +9,11 @@
 #include<random>
 #include<math.h>
 
-void generateMatrixGaussMethodRow(long n, float row_mean, float row_stddev, struct coo_rand_t* coo, bool flip);
-void generateMatrixGaussMethodCol(long n, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip);
-void generateMatrixGaussMethodFull(long n, float row_mean, float row_stddev, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip);
+void generateMatrixGaussMethodRow(long n, float row_mean, float row_stddev, struct coo_rand_t* coo, bool flip, bool zigzag);
+void generateMatrixGaussMethodCol(long n, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip, bool zigzag);
+void generateMatrixGaussMethodFull(long n, float row_mean, float row_stddev, float col_mean, float col_stddev, struct coo_rand_t* coo, bool flip, bool zigzag);
 
 void generateMatrixImbalancedRow(long n, long start_row, long skip, struct coo_rand_t* coo, bool flip);
-void generateMatrixImbalancedCol(long n, long start_col, long skip, struct coo_rand_t* coo, bool flip);
+void generateMatrixImbalancedCol(long n, long start_col, long skip, struct coo_rand_t* coo, bool flip, bool zigzag);
 
 #endif

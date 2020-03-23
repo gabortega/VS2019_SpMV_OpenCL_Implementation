@@ -146,8 +146,13 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
+#if !EXEC_WARP
 					cl::NDRange(jc::best_fit(d_jad->n, WORKGROUP_SIZE)),
 					cl::NDRange(WORKGROUP_SIZE));
+#else
+					cl::NDRange(WARP_SIZE),
+					cl::NDRange(WARP_SIZE));
+#endif
 		}
 		printRunInfo(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;

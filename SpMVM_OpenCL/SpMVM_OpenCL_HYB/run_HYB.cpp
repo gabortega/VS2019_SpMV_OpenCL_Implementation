@@ -164,7 +164,7 @@ int main(void)
 #endif
 #if HYB_HLL_SEQ || HYB_HLL
 	FreeHYBHLL(&hybhll_t);
-#if HYB_HLL
+#if HYB_HLL_SEQ
 	y5.clear();
 #endif
 #if HYB_HLL
