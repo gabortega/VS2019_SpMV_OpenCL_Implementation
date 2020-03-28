@@ -13,7 +13,7 @@
 #define USE_CONSTANT_MEM 1
 //
 // Exec as many threads as WARP size
-#define EXEC_WARP 1
+#define EXEC_WARP 0
 //
 // This setting is required in order to pre-allocate sufficient space
 // for the diag array of the DIA format.
