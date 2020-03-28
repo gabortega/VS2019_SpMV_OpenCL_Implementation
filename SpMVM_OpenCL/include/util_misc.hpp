@@ -15,6 +15,11 @@
 #include<JC/util.hpp>
 #include<IO/convert_input.h>
 
+std::string getGlobalConstants()
+{
+	return "-DPRECISION=" + std::to_string(PRECISION) + " -DUSE_CONSTANT_MEM=" + std::to_string(USE_CONSTANT_MEM);
+}
+
 std::string getTimeOfRun()
 {
 	time_t now = time(0);

@@ -111,11 +111,11 @@ int main(void)
         std::cout << std::endl << "-- STARTING GMVM BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(mat.n) +
-            " -DNN_MATRIX=" + std::to_string(mat.n * mat.n) +
-            " -DN_WORKGROUPS=" + std::to_string((mat.n + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) +
-            " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(mat.n) +
+                " -DNN_MATRIX=" + std::to_string(mat.n * mat.n) +
+                " -DN_WORKGROUPS=" + std::to_string((mat.n + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) +
+                " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + GMVM_KERNEL_FILE, context, device, macro.c_str());
@@ -143,11 +143,11 @@ int main(void)
         nworkgroups = 1 + (csr.n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DCSR_REPEAT=" + std::to_string(repeat) +
-            " -DCSR_COOP=" + std::to_string(coop) +
-            " -DUNROLL_SHARED=" + std::to_string(coop / 4) +
-            " -DN_MATRIX=" + std::to_string(csr.n);
+        macro = getGlobalConstants() +
+                " -DCSR_REPEAT=" + std::to_string(repeat) +
+                " -DCSR_COOP=" + std::to_string(coop) +
+                " -DUNROLL_SHARED=" + std::to_string(coop / 4) +
+                " -DN_MATRIX=" + std::to_string(csr.n);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, macro.c_str());
@@ -166,11 +166,11 @@ int main(void)
         std::cout << std::endl << "-- STARTING DIA BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(dia.n) +
-            " -DSTRIDE_MATRIX=" + std::to_string(dia.stride) +
-            " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
-            " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(dia.n) +
+                " -DSTRIDE_MATRIX=" + std::to_string(dia.stride) +
+                " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
+                " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + DIA_KERNEL_FILE, context, device, macro.c_str());
@@ -186,11 +186,11 @@ int main(void)
         std::cout << std::endl << "-- STARTING TRANSPOSED DIA BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(dia.n) +
-            " -DSTRIDE_MATRIX=" + std::to_string(dia.stride) +
-            " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
-            " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(dia.n) +
+                " -DSTRIDE_MATRIX=" + std::to_string(dia.stride) +
+                " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
+                " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_DIA_KERNEL_FILE, context, device, macro.c_str());
@@ -211,13 +211,13 @@ int main(void)
         std::cout << std::endl << "-- STARTING HDIA BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(hdia.n) +
-            " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
-            " -DMAX_NDIAG=" + std::to_string(MAX_NDIAG_PER_HACK) +
-            " -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
-            " -DNHOFF=" + std::to_string(hdia.nhoff - 1) +
-            " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(hdia.n) +
+                " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
+                " -DMAX_NDIAG=" + std::to_string(MAX_NDIAG_PER_HACK) +
+                " -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
+                " -DNHOFF=" + std::to_string(hdia.nhoff - 1) +
+                " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
@@ -233,10 +233,10 @@ int main(void)
         for (unroll_val = 1; (*(hdia.ndiags + hdia.nhoff - 1) / 2) >= unroll_val; unroll_val <<= 1);
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(hdia.n) +
-            " -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
-            " -DUNROLL=" + std::to_string(unroll_val);
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(hdia.n) +
+                " -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
+                " -DUNROLL=" + std::to_string(unroll_val);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_OLD_KERNEL_FILE, context, device, macro.c_str());
@@ -257,10 +257,10 @@ int main(void)
         std::cout << std::endl << "-- STARTING ELL BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DNELL=" + std::to_string(*(ellg.nell + ellg.n)) +
-            " -DN_MATRIX=" + std::to_string(ellg.n) +
-            " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride);
+        macro = getGlobalConstants() +
+                " -DNELL=" + std::to_string(*(ellg.nell + ellg.n)) +
+                " -DN_MATRIX=" + std::to_string(ellg.n) +
+                " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, macro.c_str());
@@ -273,9 +273,9 @@ int main(void)
         std::cout << std::endl << "-- STARTING ELL-G BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(ellg.n) +
-            " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride);
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(ellg.n) +
+                " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, macro.c_str());
@@ -290,10 +290,10 @@ int main(void)
         std::cout << std::endl << "-- STARTING TRANSPOSED ELL BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DNELL=" + std::to_string(*(ellg.nell + ellg.n)) +
-            " -DN_MATRIX=" + std::to_string(ellg.n) +
-            " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride);
+        macro = getGlobalConstants() +
+                " -DNELL=" + std::to_string(*(ellg.nell + ellg.n)) +
+                " -DN_MATRIX=" + std::to_string(ellg.n) +
+                " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_ELL_KERNEL_FILE, context, device, macro.c_str());
@@ -306,10 +306,10 @@ int main(void)
         std::cout << std::endl << "-- STARTING TRANSPOSED ELL-G BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(ellg.n) +
-            " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride) +
-            " -DMAX_NELL=" + std::to_string(*(ellg.nell + ellg.n));
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(ellg.n) +
+                " -DSTRIDE_MATRIX=" + std::to_string(ellg.stride) +
+                " -DMAX_NELL=" + std::to_string(*(ellg.nell + ellg.n));
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_ELLG_KERNEL_FILE, context, device, macro.c_str());
@@ -331,10 +331,10 @@ int main(void)
         std::cout << std::endl << "-- STARTING HLL BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
-            " -DN_MATRIX=" + std::to_string(hll.n) +
-            " -DUNROLL=" + std::to_string(unroll_val);
+        macro = getGlobalConstants() +
+                " -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
+                " -DN_MATRIX=" + std::to_string(hll.n) +
+                " -DUNROLL=" + std::to_string(unroll_val);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, macro.c_str());
@@ -353,10 +353,10 @@ int main(void)
         std::cout << std::endl << "-- STARTING JAD BINARY EXTRACTION --" << std::endl;
         //
         //Macro
-        macro = "-DPRECISION=" + std::to_string(PRECISION) +
-            " -DN_MATRIX=" + std::to_string(jad.n) +
-            " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NJAD_PER_WG - 1) / MAX_NJAD_PER_WG) + 1) +
-            " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
+        macro = getGlobalConstants() +
+                " -DN_MATRIX=" + std::to_string(jad.n) +
+                " -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NJAD_PER_WG - 1) / MAX_NJAD_PER_WG) + 1) +
+                " -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
         //
         program =
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + JAD_KERNEL_FILE, context, device, macro.c_str());

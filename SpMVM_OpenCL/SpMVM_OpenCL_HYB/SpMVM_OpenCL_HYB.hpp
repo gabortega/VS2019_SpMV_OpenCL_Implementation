@@ -128,12 +128,12 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macros
-	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string csr_macro = getGlobalConstants() +
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
-	std::string ell_macro = "-DPRECISION=" + std::to_string(PRECISION) + 
+	std::string ell_macro = getGlobalConstants() + 
 							" -DNELL=" + std::to_string(*(d_hyb->ellg.nell + d_hyb->ellg.n)) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
 							" -DSTRIDE_MATRIX=" + std::to_string(d_hyb->ellg.stride);
@@ -378,12 +378,12 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macros
-	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string csr_macro = getGlobalConstants() +
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
-	std::string ellg_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string ellg_macro = getGlobalConstants() +
 							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
 							" -DSTRIDE_MATRIX=" + std::to_string(d_hyb->ellg.stride);
 	//
@@ -639,12 +639,12 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 	for (unroll_val = 1; (*(d_hyb->hll.nell + d_hyb->hll.nhoff) / 2) >= unroll_val; unroll_val <<= 1);
 	//
 	//Macros
-	std::string csr_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string csr_macro = getGlobalConstants() +
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
-	std::string hll_macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string hll_macro = getGlobalConstants() +
 							" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n) +
 							" -DUNROLL=" + std::to_string(unroll_val);

@@ -133,7 +133,7 @@
 //
 //#define EXTR_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx" //same as above but for randomly generated matrices
 //#define EXTR_RANDOM_INPUT_FILES "imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
-#define EXTR_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx;random_spread_4.mtx;imbalanced_cols.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
+#define EXTR_RANDOM_INPUT_FILES "random_spread_1.mtx;random_spread_2.mtx;random_spread_3.mtx;random_spread_4.mtx;imbalanced_cols.mtx;imbalanced_cols_zigzag.mtx;imbalanced_cols_inverted.mtx;imbalanced_rows.mtx;imbalanced_rows_zigzag.mtx;imbalanced_rows_inverted.mtx;very_imbalanced_cols.mtx;very_imbalanced_rows.mtx" //same as above but for randomly generated matrices
 //
 #define OUTPUT_FOLDER "../output"
 //

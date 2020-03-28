@@ -77,7 +77,7 @@ std::vector<CL_REAL> spmv_ELL(struct ellg_t* d_ell, const std::vector<CL_REAL> d
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 		" -DNELL=" + std::to_string(*(d_ell->nell + d_ell->n)) +
 		" -DN_MATRIX=" + std::to_string(d_ell->n) +
 		" -DSTRIDE_MATRIX=" + std::to_string(d_ell->stride);
@@ -158,7 +158,7 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELL(struct ellg_t* d_ell, const std::vector
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 		" -DNELL=" + std::to_string(*(d_ell->nell + d_ell->n)) +
 		" -DN_MATRIX=" + std::to_string(d_ell->n) +
 		" -DSTRIDE_MATRIX=" + std::to_string(d_ell->stride);
@@ -278,7 +278,7 @@ std::vector<CL_REAL> spmv_ELLG(struct ellg_t* d_ellg, const std::vector<CL_REAL>
     cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_ellg->n) +
 						" -DSTRIDE_MATRIX=" + std::to_string(d_ellg->stride);
 	//
@@ -365,7 +365,7 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELLG(struct ellg_t* d_ellg, const std::vect
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 		" -DN_MATRIX=" + std::to_string(d_ellg->n) +
 		" -DSTRIDE_MATRIX=" + std::to_string(d_ellg->stride) +
 		" -DMAX_NELL=" + std::to_string(*(d_ellg->nell + d_ellg->n));
@@ -495,7 +495,7 @@ std::vector<CL_REAL> spmv_HLL(struct hll_t* d_hll, const std::vector<CL_REAL> d_
 	for (unroll_val = 1; (*(d_hll->nell + d_hll->nhoff) / 2) >= unroll_val; unroll_val <<= 1);
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) + 
+	std::string macro = getGlobalConstants() + 
 						" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
 						" -DN_MATRIX=" + std::to_string(d_hll->n) +
 						" -DUNROLL=" + std::to_string(unroll_val);

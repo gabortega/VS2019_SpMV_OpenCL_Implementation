@@ -88,7 +88,7 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_dia->n) +
 						" -DSTRIDE_MATRIX=" + std::to_string(d_dia->stride) +
 						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
@@ -189,7 +189,7 @@ std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_dia->n) +
 						" -DSTRIDE_MATRIX=" + std::to_string(d_dia->stride) +
 						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
@@ -338,7 +338,7 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_hdia->n) +
 						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
 						" -DMAX_NDIAG=" + std::to_string(MAX_NDIAG_PER_HACK) +
@@ -461,7 +461,7 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 	for (unroll_val = 1; (*(d_hdia->ndiags + d_hdia->nhoff - 1) / 2) >= unroll_val; unroll_val <<= 1);
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 		" -DN_MATRIX=" + std::to_string(d_hdia->n) +
 		" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
 		" -DUNROLL=" + std::to_string(unroll_val);

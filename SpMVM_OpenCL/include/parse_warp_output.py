@@ -24,14 +24,8 @@ def main():
         percentiles = []
         header = ["Matrix"]
         runtimes = []
-        gflops = []
-        gbps = []
         average_runtimes = []
-        average_gflops = []
-        average_gbps = []
         percentile_runtimes = {}
-        percentile_gflops = {}
-        percentile_gbps = {}
         delimiter = ";"
         decimal_separator = ","
 
@@ -42,8 +36,6 @@ def main():
                 num = convert_to_num(percentile)
                 percentiles.append(num)
                 percentile_runtimes[num] = []
-                percentile_gflops[num] = []
-                percentile_gbps[num] = []
 
         if args == 1:
             f1_lines = f1.readlines()
@@ -53,8 +45,6 @@ def main():
                     tmp_line = (tmp_line[len(tmp_line) - 1].split("."))[0]
                     matrices.append(tmp_line)
                     average_runtimes.append([])
-                    average_gflops.append([])
-                    average_gbps.append([])
                 elif "-- STARTING " in line:
                     tmp_line = line.replace("-- STARTING ", "").replace(" OPERATION --", "").strip()
                     if not tmp_line in header:
@@ -62,8 +52,6 @@ def main():
                 elif "Average time" in line:
                     tmp_line = line.split()
                     average_runtimes[len(average_runtimes) - 1].append(tmp_line[2].replace(".",decimal_separator))
-                    average_gflops[len(average_gflops) - 1].append(tmp_line[8].replace(".",decimal_separator))
-                    average_gbps[len(average_gbps) - 1].append(tmp_line[14].replace(".",decimal_separator))
             f1.close()
         elif args > 1 and len(percentiles) > 0:
             f1_lines = f1.readlines()
@@ -73,13 +61,9 @@ def main():
                     tmp_line = (tmp_line[len(tmp_line) - 1].split("."))[0]
                     matrices.append(tmp_line)
                     average_runtimes.append([])
-                    average_gflops.append([])
-                    average_gbps.append([])
 
                     for percentile in percentiles:
                         percentile_runtimes[percentile].append([])
-                        percentile_gflops[percentile].append([])
-                        percentile_gbps[percentile].append([])
                 elif "-- STARTING " in line:
                     tmp_line = line.replace("-- STARTING ", "").replace(" OPERATION --", "").strip()
                     if not tmp_line in header:
@@ -87,25 +71,15 @@ def main():
                 elif "Run:" in line:
                     tmp_line = line.split()
                     runtimes.append(convert_to_num(tmp_line[5]))
-                    gflops.append(convert_to_num(tmp_line[10]))
-                    gbps.append(convert_to_num(tmp_line[15]))
                 elif "Average time" in line:
                     runtimes.sort()
-                    gflops.sort()
-                    gbps.sort()
                     for percentile in percentiles:
                         percentile_runtimes[percentile][len(percentile_runtimes[percentile]) - 1].append(get_percentile(runtimes, percentile))
-                        percentile_gflops[percentile][len(percentile_gflops[percentile]) - 1].append(get_percentile(gflops, percentile))
-                        percentile_gbps[percentile][len(percentile_gbps[percentile]) - 1].append(get_percentile(gbps, percentile))
 
                     tmp_line = line.split()
                     average_runtimes[len(average_runtimes) - 1].append(tmp_line[2].replace(".",decimal_separator))
-                    average_gflops[len(average_gflops) - 1].append(tmp_line[8].replace(".",decimal_separator))
-                    average_gbps[len(average_gbps) - 1].append(tmp_line[14].replace(".",decimal_separator))
 
                     runtimes.clear()
-                    gflops.clear()
-                    gbps.clear()
             f1.close()
 
         with open(sys.argv[1] + ".average_runtimes.csv", "w", newline="") as f2:
@@ -113,20 +87,6 @@ def main():
             writer.writerow(header)
             for i in range(len(matrices)):
                 line = average_runtimes[i]
-                line.insert(0, matrices[i])
-                writer.writerow(line)
-        with open(sys.argv[1] + ".average_gflops.csv", "w", newline="") as f3:
-            writer = csv.writer(f3, delimiter=delimiter)
-            writer.writerow(header)
-            for i in range(len(matrices)):
-                line = average_gflops[i]
-                line.insert(0, matrices[i])
-                writer.writerow(line)
-        with open(sys.argv[1] + ".average_gbps.csv", "w", newline="") as f4:
-            writer = csv.writer(f4, delimiter=delimiter)
-            writer.writerow(header)
-            for i in range(len(matrices)):
-                line = average_gbps[i]
                 line.insert(0, matrices[i])
                 writer.writerow(line)
 
@@ -139,22 +99,8 @@ def main():
                         line = list(str(x).replace(".",decimal_separator) for x in percentile_runtimes[percentile][i])
                         line.insert(0, matrices[i])
                         writer.writerow(line)
-                with open(sys.argv[1] + ".percentile_" + str(percentile) + "_gflops.csv", "w", newline="") as f3:
-                    writer = csv.writer(f3, delimiter=delimiter)
-                    writer.writerow(header)
-                    for i in range(len(matrices)):
-                        line = list(str(x).replace(".",decimal_separator) for x in percentile_gflops[percentile][i])
-                        line.insert(0, matrices[i])
-                        writer.writerow(line)
-                with open(sys.argv[1] + ".percentile_" + str(percentile) + "_gbps.csv", "w", newline="") as f4:
-                    writer = csv.writer(f4, delimiter=delimiter)
-                    writer.writerow(header)
-                    for i in range(len(matrices)):
-                        line = list(str(x).replace(".",decimal_separator) for x in percentile_gbps[percentile][i])
-                        line.insert(0, matrices[i])
-                        writer.writerow(line)
     else:
-        print("Please specify filename (including path) as first argument.\nRemaining arguments should only be percentiles to calculate (can be any amount of integers).\n\nEx: ./SUITE/GLOBAL/WARP SIZE/output.txt 5 50 95\nThis opens file './SUITE/GLOBAL/NORMAL/output.txt' and calculates 5th, 50th and 95th percentiles.")
+        print("!!!IMPORTANT: Should only be used in WARP_SIZE tests!!!\n\nPlease specify filename (including path) as first argument.\nRemaining arguments should only be percentiles to calculate (can be any amount of integers).\n\nEx: ./SUITE/GLOBAL/NORMAL/output.txt 5 50 95\nThis opens file './SUITE/GLOBAL/NORMAL/output.txt' and calculates 5th, 50th and 95th percentiles.")
         return
 
 if __name__== "__main__":

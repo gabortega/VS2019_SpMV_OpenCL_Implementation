@@ -83,7 +83,7 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	cl::CommandQueue queue{ context, device, CL_QUEUE_PROFILING_ENABLE };
 	//
 	//Macro
-	std::string macro = "-DPRECISION=" + std::to_string(PRECISION) +
+	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_jad->n) +
 						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NJAD_PER_WG - 1)/ MAX_NJAD_PER_WG) + 1) +
 						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
