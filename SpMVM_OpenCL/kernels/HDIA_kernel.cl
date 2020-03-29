@@ -4,7 +4,7 @@
 #define REAL float
 #endif
 
-__kernel void spmv_hdia(__private unsigned int ndiags,
+__kernel void spmv_hdia(
 #if USE_CONSTANT_MEM
 	__constant unsigned int* d_ndiags,
 	__constant int* d_ioff,

@@ -60,8 +60,7 @@
 #define TRANSPOSED_ELLG_KERNEL_FILE "TRANSPOSED_ELLG_kernel.cl"
 #define TRANSPOSED_DIA_KERNEL_FILE "TRANSPOSED_DIA_kernel.cl"
 //
-//#define MAX_THREADS 4*5*2048 // max active threads for a GTX 1080: GPC * SM * 2048 !!! NO LONGER USED !!!
-#define WARP_SIZE 32
+#define WARP_SIZE 32 // default is 32
 #define WORKGROUP_SIZE 256 // default is 256
 #define WARPS_PER_WORKGROUP (WORKGROUP_SIZE / WARP_SIZE)
 //
@@ -96,7 +95,7 @@
 #define ELL 1
 #define ELLG_SEQ 0
 #define ELLG 1
-#define HLL_SEQ 1
+#define HLL_SEQ 0
 #define HLL 1
 //
 #define HYB_ELL_SEQ 0
@@ -118,7 +117,7 @@
 /*--------------------------------------------------*/
 //            Input/Output related
 //
-#define INPUT_FILE_MODE 1 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
+#define INPUT_FILE_MODE 0 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
 //
 #define INPUT_FOLDER "../input"
 #define INPUT_FILE "dynamicSoaringProblem_1.mtx"

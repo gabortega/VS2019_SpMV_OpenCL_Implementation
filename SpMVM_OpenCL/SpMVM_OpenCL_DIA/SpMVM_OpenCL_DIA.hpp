@@ -344,7 +344,7 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 						" -DMAX_NDIAG=" + std::to_string(MAX_NDIAG_PER_HACK) +
 						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
 						" -DNHOFF=" + std::to_string(d_hdia->nhoff - 1) +
-						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
+						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_HACK - 1) / MAX_NDIAG_PER_HACK) + 1);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
@@ -380,14 +380,14 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	queue.enqueueWriteBuffer(d_memoff_buffer, CL_TRUE, 0, byte_size_d_hoff, d_hdia->memoff);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
 	//
-	kernel.setArg(1, d_ndiags_buffer);
-	kernel.setArg(2, d_ioff_buffer);
-	kernel.setArg(3, d_diags_buffer);
-	kernel.setArg(4, d_hoff_buffer);
-	kernel.setArg(5, d_memoff_buffer);
-	kernel.setArg(6, d_x_buffer);
-	kernel.setArg(7, dst_y_buffer);
-	kernel.setArg(8, cl::Local(local_byte_size_shioff));
+	kernel.setArg(0, d_ndiags_buffer);
+	kernel.setArg(1, d_ioff_buffer);
+	kernel.setArg(2, d_diags_buffer);
+	kernel.setArg(3, d_hoff_buffer);
+	kernel.setArg(4, d_memoff_buffer);
+	kernel.setArg(5, d_x_buffer);
+	kernel.setArg(6, dst_y_buffer);
+	kernel.setArg(7, cl::Local(local_byte_size_shioff));
 	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
@@ -399,9 +399,8 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		for (IndexType i = 0; i < *(d_hdia->ndiags + d_hdia->nhoff - 1) - 1; i += MAX_NDIAG_PER_HACK)
 		{
-			kernel.setArg(0, MAX_NDIAG_PER_HACK); // set ndiag for this iteration
-			kernel.setArg(9, i);
-			kernel.setArg(10, i * d_hdia->stride);
+			kernel.setArg(8, i);
+			kernel.setArg(9, i * d_hdia->stride);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
