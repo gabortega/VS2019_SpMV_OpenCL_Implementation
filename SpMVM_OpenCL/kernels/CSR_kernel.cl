@@ -28,7 +28,7 @@ __kernel void spmv_csr(
 	__private unsigned int coop_id = local_row_id % CSR_COOP;
 	
 	unsigned int i, j, row_ptr;
-	unsigned unsigned int s;
+	unsigned int s;
 	REAL r;
 
 	for (i = 0; i < CSR_REPEAT; i++)
