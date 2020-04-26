@@ -65,7 +65,7 @@
 //
 // GPU-specifc parameters
 #define CORE_COUNT 20 // GTX 1080: 20 SMs
-#define CORE_CLOCK_SPEED 1733000000  // GTX 1080 (Base): 1607MHz || GTX 1080 (Boost): 1733MHz
+#define CORE_CLOCK_SPEED 1733000000  // (in Hz) GTX 1080 (Base): 1607MHz || GTX 1080 (Boost): 1733MHz
 #define WARP_SIZE 32 // default is 32
 #define WORKGROUP_SIZE 256 // default is 256
 #define WARPS_PER_WORKGROUP (WORKGROUP_SIZE / WARP_SIZE)
@@ -92,22 +92,22 @@
 #define CSR_WORKGROUP_COUNT_THRESHOLD 1500 // default is 1500
 //
 // Sequential kernels to run (0: Off; 1: On)
-#define GMVM_SEQ 0
+#define GMVM_SEQ 1
 //
-#define CSR_SEQ 0
+#define CSR_SEQ 1
 //
-#define DIA_SEQ 0
-#define HDIA_SEQ 0
+#define DIA_SEQ 1
+#define HDIA_SEQ 1
 //
-#define ELL_SEQ 0
-#define ELLG_SEQ 0
-#define HLL_SEQ 0
+#define ELL_SEQ 1
+#define ELLG_SEQ 1
+#define HLL_SEQ 1
 //
-#define HYB_ELL_SEQ 0
-#define HYB_ELLG_SEQ 0
-#define HYB_HLL_SEQ 0
+#define HYB_ELL_SEQ 1
+#define HYB_ELLG_SEQ 1
+#define HYB_HLL_SEQ 1
 //
-#define JAD_SEQ 0
+#define JAD_SEQ 1
 //
 // GPU Kernels to run (0: Off; 1: On)
 #define GMVM 1

@@ -171,12 +171,12 @@ std::vector<CL_REAL> spmv_JAD_param(struct jad_t* d_jad, const std::vector<CL_RE
 #endif
 					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < (d_jad->njad[d_jad->n] + 1); i++) d_jad->ia[i]++;
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]++;

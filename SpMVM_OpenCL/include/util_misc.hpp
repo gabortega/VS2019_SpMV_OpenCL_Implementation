@@ -15,6 +15,17 @@
 #include<JC/util.hpp>
 #include<IO/convert_input.h>
 
+long double getCPWI(long double instr_count, unsigned long long nanoseconds)
+{
+	if (instr_count == 0 || nanoseconds == 0)
+		return 0;
+	else
+	{
+		// (runtime * clock frequency) / instr_count * CORE_COUNT * WARP_SIZE
+		return (long double)((nanoseconds / 1e9) * (1 / CORE_CLOCK_SPEED)) * CORE_COUNT * WARP_SIZE;
+	}
+}
+
 std::string getGlobalConstants()
 {
 	return "-DPRECISION=" + std::to_string(PRECISION) + " -DUSE_CONSTANT_MEM=" + std::to_string(USE_CONSTANT_MEM);
@@ -33,35 +44,72 @@ double getMatrixDensity(unsigned long long matrix_n, IndexType matrix_nnz)
 	return ((double)matrix_nnz / (matrix_n * matrix_n));
 }
 
+// SEQ printing functions
 void printHeaderInfoSEQ(unsigned long long matrix_n, IndexType matrix_nnz)
 {
-	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << "Operations count: " << 2 * matrix_nnz << std::endl << std::endl;
+	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << std::endl;
 }
 
-void printHeaderInfoGPU(unsigned long long matrix_n, IndexType matrix_nnz, std::string deviceName, std::string kernel_macros)
+void printRunInfoSEQ(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
 {
-	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << "Operations count: " << 2 * matrix_nnz << std::endl << "OpenCL device: " << deviceName << std::endl << "Kernel macros: " << kernel_macros << std::endl << std::endl;
+	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << (2 * nnz / (nanoseconds / 1e9)) / 1e9 << " GFLOPS\n";
 }
 
-#if !EXEC_WARP
-void printRunInfo(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
-{
-	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << (2 * nnz / (nanoseconds / 1e9)) / 1e9 << " GFLOPS | Effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (nanoseconds / 1e9) / 1e9 << " GB/s\n";
-}
-
-void printAverageRunInfo(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+void printAverageRunInfoSEQ(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
 {
 	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << (2 * nnz / (average_nanoseconds / 1e9)) / 1e9 << " GFLOPS | Average effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (average_nanoseconds / 1e9) / 1e9 << " GB/s\n";
 }
-#else
-void printRunInfo(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+
+// GPU printing functions
+void printHeaderInfoGPU(unsigned long long matrix_n, IndexType matrix_nnz, std::string deviceName, std::string kernel_macros, long double instr_count)
 {
-	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns\n";
+	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << "OpenCL device: " << deviceName << std::endl << "Kernel macros: " << kernel_macros << std::endl << "Total kernel instructions: " << instr_count << std::endl << std::endl;
 }
 
-void printAverageRunInfo(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+void printHeaderInfoGPU_HYB(unsigned long long matrix_n, IndexType matrix_nnz, std::string deviceName, std::string kernel_macros, long double instr_count_1, long double instr_count_2)
 {
-	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns\n";
+	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << "OpenCL device: " << deviceName << std::endl << "Kernel macros: " << kernel_macros << std::endl << "Total kernel instructions: " << instr_count_1 + instr_count_2 << std::endl << "Total kernel (CSR) instructions: " << instr_count_1 << std::endl << "Total kernel (ELL) instructions: " << instr_count_2 << std::endl << std::endl;
+}
+
+#if !OVERRIDE_THREADS
+void printRunInfoGPU(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count)
+{
+	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << (2 * nnz / (nanoseconds / 1e9)) / 1e9 << " GFLOPS | Effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (nanoseconds / 1e9) / 1e9 << " GB/s | Effective CPWI per Core: " << getCPWI(instr_count, nanoseconds) << "\n";
+}
+
+void printRunInfoGPU_HYB(unsigned long long repeat, unsigned long long nanoseconds_1, unsigned long long nanoseconds_2, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count_1, long double instr_count_2)
+{
+	std::cout << "Run: " << repeat << " | Time elapsed: " << (nanoseconds_1 + nanoseconds_2) << " ns | Effective throughput: " << (2 * nnz / ((nanoseconds_1 + nanoseconds_2) / 1e9)) / 1e9 << " GFLOPS | Effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / ((nanoseconds_1 + nanoseconds_2) / 1e9) / 1e9 << " GB/s | Effective CPWI per Core: " << getCPWI(instr_count_1, nanoseconds_1) + getCPWI(instr_count_2, nanoseconds_2) << "\n";
+}
+
+void printAverageRunInfoGPU(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count)
+{
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << (2 * nnz / (average_nanoseconds / 1e9)) / 1e9 << " GFLOPS | Average effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (average_nanoseconds / 1e9) / 1e9 << " GB/s | Average CPWI per Core: " << getCPWI(instr_count, average_nanoseconds) << "\n";
+}
+
+void printAverageRunInfoGPU_HYB(unsigned long long average_nanoseconds_1, unsigned long long average_nanoseconds_2, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count_1, long double instr_count_2)
+{
+	std::cout << std::endl << "Average time: " << (average_nanoseconds_1 + average_nanoseconds_2) << " ns | Average effective throughput: " << (2 * nnz / ((average_nanoseconds_1 + average_nanoseconds_2) / 1e9)) / 1e9 << " GFLOPS | Average effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / ((average_nanoseconds_1 + average_nanoseconds_2) / 1e9) / 1e9 << " GB/s | Average CPWI per Core: " << getCPWI(instr_count_1, average_nanoseconds_1) + getCPWI(instr_count_2, average_nanoseconds_2) << "\n";
+}
+#else
+void printRunInfoGPU(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count)
+{
+	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective CPWI per Core: " << getCPWI(instr_count, nanoseconds) << "\n";
+}
+
+void printRunInfoGPU_HYB(unsigned long long repeat, unsigned long long nanoseconds_1, unsigned long long nanoseconds_2, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count_1, long double instr_count_2)
+{
+	std::cout << "Run: " << repeat << " | Time elapsed: " << (nanoseconds_1 + nanoseconds_2) << " ns | Effective CPWI per Core: " << getCPWI(instr_count_1, nanoseconds_1) + getCPWI(instr_count_2, nanoseconds_2) << "\n";
+}
+
+void printAverageRunInfoGPU(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count)
+{
+	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average CPWI per Core: " << getCPWI(instr_count, average_nanoseconds) << "\n";
+}
+
+void printAverageRunInfoGPU_HYB(unsigned long long average_nanoseconds_1, unsigned long long average_nanoseconds_2, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType, long double instr_count_1, long double instr_count_2)
+{
+	std::cout << std::endl << "Average time: " << (average_nanoseconds_1 + average_nanoseconds_2) << " ns | Average CPWI per Core: " << getCPWI(instr_count_1, average_nanoseconds_1) + getCPWI(instr_count_2, average_nanoseconds_2) << "\n";
 }
 #endif
 
