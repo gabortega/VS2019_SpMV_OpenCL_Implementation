@@ -50,12 +50,12 @@ void printHeaderInfoSEQ(unsigned long long matrix_n, IndexType matrix_nnz)
 	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << std::endl;
 }
 
-void printRunInfoSEQ(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+void printRunInfoGPUSEQ(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
 {
 	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << (2 * nnz / (nanoseconds / 1e9)) / 1e9 << " GFLOPS\n";
 }
 
-void printAverageRunInfoSEQ(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+void printAverageRunInfoGPUSEQ(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
 {
 	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << (2 * nnz / (average_nanoseconds / 1e9)) / 1e9 << " GFLOPS | Average effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (average_nanoseconds / 1e9) / 1e9 << " GB/s\n";
 }
@@ -131,7 +131,7 @@ int createOutputDirectory(std::string outputDirRoot, std::string outputDir) {
 	return 1;
 }
 
-void dumpPTXCode(cl::Program program, std::string filename) {
+void dumpoBINCode(cl::Program program, std::string filename) {
 	// taken from URL: https://community.amd.com/thread/167373
 	// Allocate some memory for all the kernel binary data  
 	const std::vector<size_t> binSizes = program.getInfo<CL_PROGRAM_BINARY_SIZES>();

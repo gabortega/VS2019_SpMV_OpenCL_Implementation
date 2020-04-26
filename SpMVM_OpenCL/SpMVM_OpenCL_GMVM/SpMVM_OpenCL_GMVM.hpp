@@ -38,11 +38,11 @@ std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<RE
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = GMVM_sequential(d_mat, d_x, dst_y);
-		printRunInfoSEQ(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
+		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoSEQ(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
+	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
 
 	return dst_y;
 }
@@ -129,12 +129,12 @@ std::vector<CL_REAL> spmv_GMVM_param(struct mat_t* d_mat, const std::vector<CL_R
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfo(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
 
 	return dst_y;
 }

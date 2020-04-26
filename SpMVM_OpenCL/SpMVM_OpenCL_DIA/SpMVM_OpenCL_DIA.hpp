@@ -49,11 +49,11 @@ std::vector<REAL> spmv_DIA_sequential(struct dia_t* d_dia, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = DIA_sequential(d_dia, d_x, dst_y);
-		printRunInfoSEQ(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoSEQ(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 
 	return dst_y;
 }
@@ -166,12 +166,12 @@ std::vector<CL_REAL> spmv_DIA_param(struct dia_t* d_dia, const std::vector<CL_RE
 #endif
 					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
 }
@@ -289,12 +289,12 @@ std::vector<CL_REAL> spmv_TRANSPOSED_DIA_param(struct dia_t* d_dia, const std::v
 #endif
 					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
 }
@@ -338,11 +338,11 @@ std::vector<REAL> spmv_HDIA_sequential(struct hdia_t* d_hdia, const std::vector<
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = HDIA_sequential(d_hdia, d_x, dst_y);
-		printRunInfoSEQ(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoSEQ(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 
 	return dst_y;
 }
@@ -475,12 +475,12 @@ std::vector<CL_REAL> spmv_HDIA_param(struct hdia_t* d_hdia, const std::vector<CL
 #endif
 					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
 }
@@ -611,12 +611,12 @@ std::vector<CL_REAL> spmv_HDIA_OLD_param(struct hdia_t* d_hdia, const std::vecto
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
 }

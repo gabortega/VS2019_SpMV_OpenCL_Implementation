@@ -46,11 +46,11 @@ std::vector<REAL> spmv_JAD_sequential(struct jad_t* d_jad, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = JAD_sequential(d_jad, d_x, dst_y);
-		printRunInfoSEQ(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
+		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoSEQ(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < (d_jad->njad[d_jad->n] + 1); i++) d_jad->ia[i]++;
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]++;
@@ -171,12 +171,12 @@ std::vector<CL_REAL> spmv_JAD_param(struct jad_t* d_jad, const std::vector<CL_RE
 #endif
 					cl::NDRange(workgroup_size));
 		}
-		printRunInfoGPU(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPUGPU(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPUGPU(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < (d_jad->njad[d_jad->n] + 1); i++) d_jad->ia[i]++;
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]++;

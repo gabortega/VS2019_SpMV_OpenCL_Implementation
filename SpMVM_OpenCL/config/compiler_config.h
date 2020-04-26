@@ -13,10 +13,10 @@
 #define USE_CONSTANT_MEM 1
 //
 // Force thread count on all kernels
-#define OVERRIDE_THREADS 0
+#define OVERRIDE_THREADS 1
 //
 // Force local memory use on kernels that don't use local memory
-#define OVERRIDE_MEM 0
+#define OVERRIDE_MEM 1
 //
 // This setting is required in order to pre-allocate sufficient space
 // for the diag array of the DIA format.
