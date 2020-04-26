@@ -46,11 +46,11 @@ std::vector<REAL> spmv_JAD_sequential(struct jad_t* d_jad, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = JAD_sequential(d_jad, d_x, dst_y);
-		printRunInfo(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < (d_jad->njad[d_jad->n] + 1); i++) d_jad->ia[i]++;
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]++;
@@ -60,19 +60,33 @@ std::vector<REAL> spmv_JAD_sequential(struct jad_t* d_jad, const std::vector<REA
 #endif
 
 #if JAD
-std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_JAD_param(struct jad_t* d_jad, const std::vector<CL_REAL> d_x, unsigned int workgroup_size, unsigned int max_njad_per_wg, unsigned int local_mem_size, unsigned int thread_count)
 {
 	//decrement all values
 	for (IndexType i = 0; i < (d_jad->njad[d_jad->n] + 1); i++) d_jad->ia[i]--;
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]--;
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
-	unsigned long long for_iters = (d_jad->njad[d_jad->n] + MAX_NJAD_PER_WG - 1) / MAX_NJAD_PER_WG;
+	unsigned long long for_iters = (d_jad->njad[d_jad->n] + max_njad_per_wg - 1) / max_njad_per_wg;
 	//jad->a + d_x + dst_y
 	unsigned long long units_REAL = d_jad->nnz + d_jad->nnz + d_jad->n * for_iters;
 	//jad->ia + jad->ja + jad->njad + jad->perm
-	unsigned long long units_IndexType = ((d_jad->njad[d_jad->n] + 1) * (jc::best_fit(d_jad->n, WORKGROUP_SIZE) + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) + d_jad->nnz + 3 * d_jad->n * for_iters;
+	unsigned long long units_IndexType = ((d_jad->njad[d_jad->n] + 1) * (jc::best_fit(d_jad->n, workgroup_size) + workgroup_size - 1) / workgroup_size) + d_jad->nnz + 3 * d_jad->n * for_iters;
+#if !OVERRIDE_THREADS
 	//
+	//Instruction count
+	long double instr_count = 0;
+	for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += max_njad_per_wg)
+		instr_count += 1 + 1 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 2 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 6 + 4 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 5 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 16 + 4;
+	//
+#else
+	//
+	//Instruction count
+	long double instr_count = 0;
+	for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += max_njad_per_wg)
+		instr_count += 2 + 1 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 2 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 6 + 4 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 5 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 16 + 6;
+	//
+#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -85,14 +99,18 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	//Macro
 	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_jad->n) +
-						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NJAD_PER_WG - 1)/ MAX_NJAD_PER_WG) + 1) +
-						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
+						" -DUNROLL_SHARED=" + std::to_string(((workgroup_size + max_njad_per_wg - 1)/ max_njad_per_wg) + 1) +
+						" -DWORKGROUP_SIZE=" + std::to_string(workgroup_size);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + JAD_KERNEL_FILE, context, device, macro.c_str());
+#if !OVERRIDE_THREADS
 	cl::Kernel kernel{ program, "spmv_jad" };
+#else
+	cl::Kernel kernel{ program, "occ_spmv_jad" };
+#endif
 	//
-	printHeaderInfoGPU(d_jad->n, d_jad->nnz, deviceName, macro);
+	printHeaderInfoGPU(d_jad->n, d_jad->nnz, deviceName, macro, instr_count);
 	//
 	size_t byte_size_d_njad = d_jad->n * sizeof(cl_uint);
 	size_t byte_size_d_ia = (d_jad->njad[d_jad->n] + 1) * sizeof(cl_uint);
@@ -113,7 +131,7 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	cl_ulong size;
 	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 	//
-	size_t local_byte_size_shia = MAX_NJAD_PER_WG * sizeof(cl_uint);
+	size_t local_byte_size_shia = max(max_njad_per_wg * sizeof(cl_uint), local_mem_size);
 	//
 	queue.enqueueWriteBuffer(d_njad_buffer, CL_TRUE, 0, byte_size_d_njad, d_jad->njad);
 	queue.enqueueWriteBuffer(d_ia_buffer, CL_TRUE, 0, byte_size_d_ia, d_jad->ia);
@@ -139,32 +157,36 @@ std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_
 	{
 		nanoseconds = 0;
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
-		for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += MAX_NJAD_PER_WG)
+		for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += max_njad_per_wg)
 		{
-			kernel.setArg(0, min(*(d_jad->njad + d_jad->n) - i, MAX_NJAD_PER_WG)); // set njad for this iteration
+			kernel.setArg(0, min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg)); // set njad for this iteration
 			kernel.setArg(9, i);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(jc::best_fit(d_jad->n, WORKGROUP_SIZE)),
-					cl::NDRange(WORKGROUP_SIZE));
+#if !OVERRIDE_THREADS
+					cl::NDRange(jc::best_fit(d_jad->n, workgroup_size)),
 #else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
+					cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
+					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
+		printRunInfo(r + 1, nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType);
+	printAverageRunInfo(average_nanoseconds, (d_jad->nnz), units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < (d_jad->njad[d_jad->n] + 1); i++) d_jad->ia[i]++;
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]++;
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_JAD(struct jad_t* d_jad, const std::vector<CL_REAL> d_x)
+{
+	return spmv_JAD_param(d_jad, d_x, WORKGROUP_SIZE, MAX_NJAD_PER_WG, 0, 0);
 }
 #endif
 

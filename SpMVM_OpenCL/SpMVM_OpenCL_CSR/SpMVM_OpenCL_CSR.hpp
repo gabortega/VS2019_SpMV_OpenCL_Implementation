@@ -42,11 +42,11 @@ std::vector<REAL> spmv_CSR_sequential(struct csr_t* d_csr, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = CSR_sequential(d_csr, d_x, dst_y);
-		printRunInfo(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;
@@ -56,27 +56,45 @@ std::vector<REAL> spmv_CSR_sequential(struct csr_t* d_csr, const std::vector<REA
 #endif
 
 #if CSR
-std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_CSR_param(struct csr_t* d_csr, const std::vector<CL_REAL> d_x, unsigned int workgroup_size, unsigned int local_mem_size, unsigned int thread_count)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]--;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]--;
 	//
-	IndexType i, row_len = 0, coop, repeat = 1, nworkgroups;
+	IndexType i, row_len = 0, coop, repeat = 1, nworkgroups, row_len_sqrt = 0;
 	for (i = 0; i < d_csr->n; i++) row_len += d_csr->ia[i + 1] - d_csr->ia[i];
-	row_len = sqrt(row_len/d_csr->n);
-	for (coop = 1; coop < 32 && row_len >= coop; coop <<= 1);
-	nworkgroups = 1 + (d_csr->n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
-	if (nworkgroups > 1500)
-		for (repeat = 1; (1 + (d_csr->n * coop - 1) / ((repeat + 1) * CSR_WORKGROUP_SIZE)) > 1500; repeat++);
-	nworkgroups = 1 + (d_csr->n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
+	row_len /= d_csr->n;
+	row_len_sqrt = sqrt(row_len);
+	for (coop = 1; coop < 32 && row_len_sqrt >= coop; coop <<= 1);
+#if !OVERRIDE_THREADS
+	nworkgroups = 1 + (d_csr->n * coop - 1) / (repeat * workgroup_size);
+	if (nworkgroups > CSR_WORKGROUP_COUNT_THRESHOLD)
+		for (repeat = 1; (1 + (d_csr->n * coop - 1) / ((repeat + 1) * workgroup_size)) > CSR_WORKGROUP_COUNT_THRESHOLD; repeat++);
+	nworkgroups = 1 + (d_csr->n * coop - 1) / (repeat * workgroup_size);
+#else
+	nworkgroups = 1 + (thread_count * coop - 1) / (repeat * workgroup_size);
+	if (nworkgroups > (thread_count / workgroup_size))
+		for (repeat = 1; (1 + (thread_count * coop - 1) / ((repeat + 1) * workgroup_size)) > (thread_count / workgroup_size); repeat++);
+	nworkgroups = 1 + (thread_count * coop - 1) / (repeat * workgroup_size);
+#endif
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//d_csr->a + d_x + dst_y
 	unsigned long long units_REAL = d_csr->nnz + d_csr->nnz + d_csr->n;
 	//d_csr->ia + d_csr->ja
 	unsigned long long units_IndexType = d_csr->n + d_csr->nnz;
+#if !OVERRIDE_THREADS
 	//
+	//Instruction count
+	long double instr_count = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+	//
+#else
+	//
+	//Instruction count
+	long double instr_count = 11 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 14);
+	//
+#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -95,9 +113,13 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, macro.c_str());
+#if !OVERRIDE_THREADS
 	cl::Kernel kernel{ program, "spmv_csr" };
+#else
+	cl::Kernel kernel{ program, "occ_spmv_csr" };
+#endif
 	//
-	printHeaderInfoGPU(d_csr->n, d_csr->nnz, deviceName, macro);
+	printHeaderInfoGPU(d_csr->n, d_csr->nnz, deviceName, macro, instr_count);
 	//
 	size_t byte_size_d_ia = (d_csr->n + 1) * sizeof(cl_uint);
 	size_t byte_size_d_ja = d_csr->nnz * sizeof(cl_uint);
@@ -114,7 +136,7 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 	cl_ulong size;
 	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 	//
-	size_t local_byte_size_shdata = CSR_WORKGROUP_SIZE * sizeof(CL_REAL);
+	size_t local_byte_size_shdata = max(workgroup_size * sizeof(CL_REAL), local_mem_size);
 	//
 	queue.enqueueWriteBuffer(d_ia_buffer, CL_TRUE, 0, byte_size_d_ia, d_csr->ia);
 	queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_csr->ja);
@@ -139,24 +161,24 @@ std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-#if !EXEC_WARP
-				cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
-				cl::NDRange(CSR_WORKGROUP_SIZE));
-#else
-				cl::NDRange(WARP_SIZE),
-				cl::NDRange(WARP_SIZE));
-#endif
-		printRunInfo(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
+				cl::NDRange(nworkgroups * workgroup_size),
+				cl::NDRange(workgroup_size));
+		printRunInfo(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_csr->nnz), units_REAL, units_IndexType);
+	printAverageRunInfo(average_nanoseconds, (d_csr->nnz), units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_CSR(struct csr_t* d_csr, const std::vector<CL_REAL> d_x)
+{
+	return spmv_CSR_param(d_csr, d_x, CSR_WORKGROUP_SIZE, 0, 0);
 }
 #endif
 

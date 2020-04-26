@@ -1,6 +1,6 @@
 #include<compiler_config.h>
 
-#if DIA_SEQ || DIA || HDIA_SEQ || HDIA
+#if DIA_SEQ || DIA || TRANSPOSED_DIA || HDIA_SEQ || HDIA || HDIA_OLD
 #ifndef OPENCL_DIA_H
 #define OPENCL_DIA_H
 
@@ -49,18 +49,18 @@ std::vector<REAL> spmv_DIA_sequential(struct dia_t* d_dia, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = DIA_sequential(d_dia, d_x, dst_y);
-		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 
 	return dst_y;
 }
 #endif
 
 #if DIA
-std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_DIA_param(struct dia_t* d_dia, const std::vector<CL_REAL> d_x, unsigned int workgroup_size, unsigned int max_ndiags_per_wg, unsigned int local_mem_size, unsigned int thread_count)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	unsigned long long ioff_access = 0;
@@ -76,8 +76,22 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	//d_dia->diags + d_x + dst_y
 	unsigned long long units_REAL = 2 * ioff_access + d_dia->n;
 	//d_dia->ioff
-	unsigned long long units_IndexType = (d_dia->ndiags * (jc::best_fit(d_dia->n, WORKGROUP_SIZE) + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE);
+	unsigned long long units_IndexType = (d_dia->ndiags * (jc::best_fit(d_dia->n, workgroup_size) + workgroup_size - 1) / workgroup_size);
+#if !OVERRIDE_THREADS
 	//
+	//Instruction count
+	long double instr_count = 0;
+	for (IndexType i = 0; i < d_dia->ndiags; i += max_ndiags_per_wg)
+		instr_count += 2 + 1 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 2 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 4 + 1 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 4 + 2 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 15 + 3;
+	//
+#else
+	//
+	//Instruction count
+	long double instr_count = 0;
+	for (IndexType i = 0; i < d_dia->ndiags; i += max_ndiags_per_wg)
+		instr_count += 3 + 1 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 2 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 4 + 1 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 4 + 2 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 15 + 5;
+	//
+#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -91,14 +105,18 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_dia->n) +
 						" -DSTRIDE_MATRIX=" + std::to_string(d_dia->stride) +
-						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
-						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
+						" -DWORKGROUP_SIZE=" + std::to_string(workgroup_size) +
+						" -DUNROLL_SHARED=" + std::to_string(((workgroup_size + max_ndiags_per_wg - 1) / max_ndiags_per_wg) + 1);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + DIA_KERNEL_FILE, context, device, macro.c_str());
+#if !OVERRIDE_THREADS
 	cl::Kernel kernel{ program, "spmv_dia" };
+#else
+	cl::Kernel kernel{ program, "occ_spmv_dia" };
+#endif
 	//
-	printHeaderInfoGPU(d_dia->n, d_dia->nnz, deviceName, macro);
+	printHeaderInfoGPU(d_dia->n, d_dia->nnz, deviceName, macro, instr_count);
 	//
 	size_t byte_size_d_ioff = d_dia->ndiags * sizeof(cl_int);
 	size_t byte_size_d_diags = d_dia->stride * d_dia->ndiags * sizeof(CL_REAL);
@@ -113,7 +131,7 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	cl_ulong size;
 	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 	//
-	size_t local_byte_size_shia = MAX_NDIAG_PER_WG * sizeof(cl_int);
+	size_t local_byte_size_shia = max(max_ndiags_per_wg * sizeof(cl_int), local_mem_size);
 	//
 	queue.enqueueWriteBuffer(d_ioff_buffer, CL_TRUE, 0, byte_size_d_ioff, d_dia->ioff);
 	queue.enqueueWriteBuffer(d_diags_buffer, CL_TRUE, 0, byte_size_d_diags, d_dia->diags);
@@ -133,35 +151,39 @@ std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_
 	{
 		nanoseconds = 0;
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
-		for (IndexType i = 0; i < d_dia->ndiags; i += MAX_NDIAG_PER_WG)
+		for (IndexType i = 0; i < d_dia->ndiags; i += max_ndiags_per_wg)
 		{
-			kernel.setArg(0, min(d_dia->ndiags - i, MAX_NDIAG_PER_WG)); // set ndiag for this iteration
+			kernel.setArg(0, min(d_dia->ndiags - i, max_ndiags_per_wg)); // set ndiag for this iteration
 			kernel.setArg(6, i);
 			kernel.setArg(7, i * d_dia->stride);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(jc::best_fit(d_dia->n, WORKGROUP_SIZE)),
-					cl::NDRange(WORKGROUP_SIZE));
+#if !OVERRIDE_THREADS
+					cl::NDRange(jc::best_fit(d_dia->n, workgroup_size)),
 #else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
+					cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
+					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_x)
+{
+	return spmv_DIA_param(d_dia, d_x, WORKGROUP_SIZE, MAX_NDIAG_PER_WG, 0, 0);
 }
 #endif
 
 #if TRANSPOSED_DIA
-std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_TRANSPOSED_DIA_param(struct dia_t* d_dia, const std::vector<CL_REAL> d_x, unsigned int workgroup_size, unsigned int max_ndiags_per_wg, unsigned int local_mem_size, unsigned int thread_count)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	unsigned long long ioff_access = 0;
@@ -177,8 +199,22 @@ std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<
 	//d_dia->diags + d_x + dst_y
 	unsigned long long units_REAL = 2 * ioff_access + d_dia->n;
 	//d_dia->ioff
-	unsigned long long units_IndexType = (d_dia->ndiags * (jc::best_fit(d_dia->n, WORKGROUP_SIZE) + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE);
+	unsigned long long units_IndexType = (d_dia->ndiags * (jc::best_fit(d_dia->n, workgroup_size) + workgroup_size - 1) / workgroup_size);
+#if !OVERRIDE_THREADS
 	//
+	//Instruction count
+	long double instr_count = 0;
+	for (IndexType i = 0; i < d_dia->ndiags; i += max_ndiags_per_wg)
+		instr_count += 2 + 1 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 2 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 4 + 1 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 4 + 2 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 15 + 3;
+	//
+#else
+	//
+	//Instruction count
+	long double instr_count = 0;
+	for (IndexType i = 0; i < d_dia->ndiags; i += max_ndiags_per_wg)
+		instr_count += 3 + 1 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 2 + ((double)min(d_dia->ndiags - i, max_ndiags_per_wg) / workgroup_size) * 4 + 4 + 1 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 4 + 2 + min(d_dia->ndiags - i, max_ndiags_per_wg) * 15 + 5;
+	//
+#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -192,14 +228,18 @@ std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<
 	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_dia->n) +
 						" -DSTRIDE_MATRIX=" + std::to_string(d_dia->stride) +
-						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
-						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_WG - 1) / MAX_NDIAG_PER_WG) + 1);
+						" -DWORKGROUP_SIZE=" + std::to_string(workgroup_size) +
+						" -DUNROLL_SHARED=" + std::to_string(((workgroup_size + max_ndiags_per_wg - 1) / max_ndiags_per_wg) + 1);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_DIA_KERNEL_FILE, context, device, macro.c_str());
+#if !OVERRIDE_THREADS
 	cl::Kernel kernel{ program, "spmv_transposed_dia" };
+#else
+	cl::Kernel kernel{ program, "occ_spmv_transposed_dia" };
+#endif
 	//
-	printHeaderInfoGPU(d_dia->n, d_dia->nnz, deviceName, macro);
+	printHeaderInfoGPU(d_dia->n, d_dia->nnz, deviceName, macro, instr_count);
 	//
 	size_t byte_size_d_ioff = d_dia->ndiags * sizeof(cl_int);
 	size_t byte_size_d_diags = d_dia->stride * d_dia->ndiags * sizeof(CL_REAL);
@@ -214,7 +254,7 @@ std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<
 	cl_ulong size;
 	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 	//
-	size_t local_byte_size_shia = MAX_NDIAG_PER_WG * sizeof(cl_int);
+	size_t local_byte_size_shia = max(max_ndiags_per_wg * sizeof(cl_int), local_mem_size);
 	//
 	queue.enqueueWriteBuffer(d_ioff_buffer, CL_TRUE, 0, byte_size_d_ioff, d_dia->ioff);
 	queue.enqueueWriteBuffer(d_diags_buffer, CL_TRUE, 0, byte_size_d_diags, d_dia->diags);
@@ -234,30 +274,34 @@ std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<
 	{
 		nanoseconds = 0;
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
-		for (IndexType i = 0; i < d_dia->ndiags; i += MAX_NDIAG_PER_WG)
+		for (IndexType i = 0; i < d_dia->ndiags; i += max_ndiags_per_wg)
 		{
-			kernel.setArg(0, min(d_dia->ndiags - i, MAX_NDIAG_PER_WG)); // set ndiag for this iteration
+			kernel.setArg(0, min(d_dia->ndiags - i, max_ndiags_per_wg)); // set ndiag for this iteration
 			kernel.setArg(6, i);
 			kernel.setArg(7, i * d_dia->stride);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(jc::best_fit(d_dia->n, WORKGROUP_SIZE)),
-					cl::NDRange(WORKGROUP_SIZE));
+#if !OVERRIDE_THREADS
+					cl::NDRange(jc::best_fit(d_dia->n, workgroup_size)),
 #else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
+					cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
+					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+		printRunInfo(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfo(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_TRANSPOSED_DIA(struct dia_t* d_dia, const std::vector<CL_REAL> d_x)
+{
+	return spmv_TRANSPOSED_DIA_param(d_dia, d_x, WORKGROUP_SIZE, MAX_NDIAG_PER_WG, 0, 0);
 }
 #endif
 
@@ -294,18 +338,18 @@ std::vector<REAL> spmv_HDIA_sequential(struct hdia_t* d_hdia, const std::vector<
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = HDIA_sequential(d_hdia, d_x, dst_y);
-		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 
 	return dst_y;
 }
 #endif
 
 #if HDIA
-std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HDIA_param(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x, unsigned int workgroup_size, unsigned int max_ndiags_per_hack, unsigned int local_mem_size, unsigned int thread_count)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	unsigned long long ioff_access = 0, total_ndiags = 0;
@@ -327,7 +371,23 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	unsigned long long units_REAL = 2 * ioff_access + d_hdia->n;
 	//d_dia->ioff + d_hdia->memoff + d_hdia->ndiags + d_hdia->hoff
 	unsigned long long units_IndexType = total_ndiags + d_hdia->n + d_hdia->n + d_hdia->n;
+#if !OVERRIDE_THREADS
 	//
+	//Instruction count
+	unsigned int shared_step = min(HDIA_HACKSIZE, workgroup_size);
+	long double instr_count = 0;
+	for (IndexType i = 0; i < *(d_hdia->ndiags + d_hdia->nhoff - 1) - 1; i += max_ndiags_per_hack)
+		instr_count += 26 + 1 + ((double)min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) / shared_step) * 4 + 2 + ((double)min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) / shared_step) * 6 + 3 + 1 + min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) * 4 + 2 + min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) * 16 + 3;
+	//
+#else
+	//
+	//Instruction count
+	unsigned int shared_step = min(HDIA_HACKSIZE, workgroup_size);
+	long double instr_count = 0;
+	for (IndexType i = 0; i < *(d_hdia->ndiags + d_hdia->nhoff - 1) - 1; i += max_ndiags_per_hack)
+		instr_count += 27 + 1 + ((double)min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) / shared_step) * 4 + 2 + ((double)min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) / shared_step) * 6 + 3 + 1 + min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) * 4 + 2 + min(*(d_hdia->ndiags + d_hdia->nhoff - 1) - i, max_ndiags_per_hack) * 16 + 5;
+	//
+#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -340,17 +400,21 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	//Macro
 	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_hdia->n) +
-						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE) +
-						" -DMAX_NDIAG=" + std::to_string(MAX_NDIAG_PER_HACK) +
+						" -DWORKGROUP_SIZE=" + std::to_string(workgroup_size) +
+						" -DMAX_NDIAG=" + std::to_string(max_ndiags_per_hack) +
 						" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
 						" -DNHOFF=" + std::to_string(d_hdia->nhoff - 1) +
-						" -DUNROLL_SHARED=" + std::to_string(((WORKGROUP_SIZE + MAX_NDIAG_PER_HACK - 1) / MAX_NDIAG_PER_HACK) + 1);
+						" -DUNROLL_SHARED=" + std::to_string(((workgroup_size + max_ndiags_per_hack - 1) / max_ndiags_per_hack) + 1);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
+#if !OVERRIDE_THREADS
 	cl::Kernel kernel{ program, "spmv_hdia" };
+#else
+	cl::Kernel kernel{ program, "occ_spmv_hdia" };
+#endif
 	//
-	printHeaderInfoGPU(d_hdia->n, d_hdia->nnz, deviceName, macro);
+	printHeaderInfoGPU(d_hdia->n, d_hdia->nnz, deviceName, macro, instr_count);
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);
@@ -371,7 +435,7 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	cl_ulong size;
 	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 	//
-	size_t local_byte_size_shioff = ((WORKGROUP_SIZE + HDIA_HACKSIZE - 1) / HDIA_HACKSIZE) * MAX_NDIAG_PER_HACK * sizeof(cl_int);
+	size_t local_byte_size_shioff = max(((workgroup_size + HDIA_HACKSIZE - 1) / HDIA_HACKSIZE) * max_ndiags_per_hack * sizeof(cl_int), local_mem_size);
 	//
 	queue.enqueueWriteBuffer(d_ndiags_buffer, CL_TRUE, 0, byte_size_d_ndiags, d_hdia->ndiags);
 	queue.enqueueWriteBuffer(d_ioff_buffer, CL_TRUE, 0, byte_size_d_ioff, d_hdia->ioff);
@@ -397,34 +461,38 @@ std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL>
 	{
 		nanoseconds = 0;
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
-		for (IndexType i = 0; i < *(d_hdia->ndiags + d_hdia->nhoff - 1) - 1; i += MAX_NDIAG_PER_HACK)
+		for (IndexType i = 0; i < *(d_hdia->ndiags + d_hdia->nhoff - 1) - 1; i += max_ndiags_per_hack)
 		{
 			kernel.setArg(8, i);
 			kernel.setArg(9, i * d_hdia->stride);
 			nanoseconds +=
 				jc::run_and_time_kernel(kernel,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
-					cl::NDRange(WORKGROUP_SIZE));
+#if !OVERRIDE_THREADS
+					cl::NDRange(jc::best_fit(d_hdia->n, workgroup_size)),
 #else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
+					cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
+					cl::NDRange(workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_HDIA(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
+{
+	return spmv_HDIA_param(d_hdia, d_x, WORKGROUP_SIZE, MAX_NDIAG_PER_HACK, 0, 0);
 }
 #endif
 
 #if HDIA_OLD
-std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HDIA_OLD_param(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x, unsigned int workgroup_size, unsigned int local_mem_size, unsigned int thread_count)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	unsigned long long ioff_access = 0, total_ndiags = 0;
@@ -446,7 +514,17 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 	unsigned long long units_REAL = 2 * ioff_access + d_hdia->n;
 	//d_dia->ioff + d_hdia->memoff + d_hdia->ndiags + d_hdia->hoff
 	unsigned long long units_IndexType = total_ndiags + d_hdia->n + d_hdia->n + d_hdia->n;
+#if !OVERRIDE_THREADS
 	//
+	//Instruction count
+	long double instr_count = 11 + 1 + *(d_hdia->ndiags + d_hdia->nhoff - 1) * 4 + 2 + *(d_hdia->ndiags + d_hdia->nhoff - 1) * 15 + 2;
+	//
+#else
+	//
+	//Instruction count
+	long double instr_count = 12 + 1 + *(d_hdia->ndiags + d_hdia->nhoff - 1) * 4 + 2 + *(d_hdia->ndiags + d_hdia->nhoff - 1) * 15 + 4;
+	//
+#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -461,15 +539,20 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 	//
 	//Macro
 	std::string macro = getGlobalConstants() +
+		" -DOVERRIDE_MEM=" + std::to_string(OVERRIDE_MEM) +
 		" -DN_MATRIX=" + std::to_string(d_hdia->n) +
 		" -DHACKSIZE=" + std::to_string(HDIA_HACKSIZE) +
 		" -DUNROLL=" + std::to_string(unroll_val);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_OLD_KERNEL_FILE, context, device, macro.c_str());
+#if !OVERRIDE_THREADS
 	cl::Kernel kernel{ program, "spmv_hdia" };
+#else
+	cl::Kernel kernel{ program, "occ_spmv_hdia" };
+#endif
 	//
-	printHeaderInfoGPU(d_hdia->n, d_hdia->nnz, deviceName, macro);
+	printHeaderInfoGPU(d_hdia->n, d_hdia->nnz, deviceName, macro, instr_count);
 	//
 	size_t byte_size_d_ndiags = d_hdia->nhoff * sizeof(cl_uint);
 	size_t byte_size_d_ioff = *(d_hdia->hoff + d_hdia->nhoff - 1) * sizeof(cl_int);
@@ -502,6 +585,17 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 	kernel.setArg(5, d_x_buffer);
 	kernel.setArg(6, dst_y_buffer);
 	//
+#if OVERRIDE_MEM
+	cl_ulong size;
+	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
+	//
+	size_t local_byte_size_dummy_mem = local_mem_size;
+	//
+	kernel.setArg(7, cl::Local(local_byte_size_dummy_mem));
+	//
+	std::cout << "!!! A work-group uses " << local_byte_size_dummy_mem << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+#endif
+	//
 	cl_ulong nanoseconds;
 	cl_ulong total_nanoseconds = 0;
 	//
@@ -511,21 +605,25 @@ std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_R
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
 				queue,
-#if !EXEC_WARP
-				cl::NDRange(jc::best_fit(d_hdia->n, WORKGROUP_SIZE)),
-				cl::NDRange(WORKGROUP_SIZE));
+#if !OVERRIDE_THREADS
+				cl::NDRange(jc::best_fit(d_hdia->n, workgroup_size)),
 #else
-				cl::NDRange(WARP_SIZE),
-				cl::NDRange(WARP_SIZE));
+				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
-		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+				cl::NDRange(workgroup_size));
+		printRunInfo(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfo(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType, instr_count);
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_HDIA_OLD(struct hdia_t* d_hdia, const std::vector<CL_REAL> d_x)
+{
+	return spmv_HDIA_OLD_param(d_hdia, d_x, WORKGROUP_SIZE, 0, 0);
 }
 #endif
 

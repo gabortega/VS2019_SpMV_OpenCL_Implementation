@@ -67,11 +67,11 @@ std::vector<REAL> spmv_HYB_ELL_sequential(struct hybellg_t* d_hyb, const std::ve
 		{
 			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -82,7 +82,7 @@ std::vector<REAL> spmv_HYB_ELL_sequential(struct hybellg_t* d_hyb, const std::ve
 #endif
 
 #if HYB_ELL
-std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HYB_ELL_param(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x, unsigned int csr_workgroup_size, unsigned int ellg_workgroup_size, unsigned int csr_local_mem_size, unsigned int ellg_local_mem_size)
 {	
 	//decrement all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]--;
@@ -95,10 +95,10 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 		for (i = 0; i < d_hyb->csr.n; i++) row_len += d_hyb->csr.ia[i + 1] - d_hyb->csr.ia[i];
 		row_len = sqrt(row_len / d_hyb->csr.n);
 		for (coop = 1; coop < 32 && row_len >= coop; coop <<= 1);
-		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
+		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * csr_workgroup_size);
 		if (nworkgroups > 1500)
-			for (repeat = 1; (1 + (d_hyb->csr.n * coop - 1) / ((repeat + 1) * CSR_WORKGROUP_SIZE)) > 1500; repeat++);
-		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
+			for (repeat = 1; (1 + (d_hyb->csr.n * coop - 1) / ((repeat + 1) * csr_workgroup_size)) > 1500; repeat++);
+		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * csr_workgroup_size);
 	}
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
@@ -118,6 +118,16 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 		units_IndexType += d_hyb->csr.n + d_hyb->csr.nnz;
 	}
 	//
+	//Instruction count
+	long double instr_count_ell = 4 + 1 + *(d_hyb->ellg.nell + d_hyb->n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->n) * 9 + 2;
+	//
+	//Instruction count
+	long double instr_count_csr = 0;
+	if (d_hyb->csr.nnz > 0)
+	{
+		instr_count_csr = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+	}
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -133,7 +143,8 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 							" -DCSR_COOP=" + std::to_string(coop) +
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
-	std::string ell_macro = getGlobalConstants() + 
+	std::string ell_macro = getGlobalConstants() +
+							" -DOVERRIDE_MEM=" + std::to_string(OVERRIDE_MEM) +
 							" -DNELL=" + std::to_string(*(d_hyb->ellg.nell + d_hyb->ellg.n)) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
 							" -DSTRIDE_MATRIX=" + std::to_string(d_hyb->ellg.stride);
@@ -146,7 +157,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, ell_macro.c_str());
 	cl::Kernel kernel_ell{ program_ell, "spmv_ell" };
 	//
-	printHeaderInfoGPU(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + ell_macro);
+	printHeaderInfoGPU_HYB(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + ell_macro, instr_count_ell, instr_count_csr);
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -178,6 +189,17 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 		kernel_ell.setArg(1, d_a_buffer);
 		kernel_ell.setArg(2, d_x_buffer);
 		kernel_ell.setArg(3, dst_y_buffer);
+		//
+#if OVERRIDE_MEM
+		cl_ulong size;
+		device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
+		//
+		size_t local_byte_size_dummy_mem = ellg_local_mem_size;
+		//
+		kernel_ell.setArg(4, cl::Local(local_byte_size_dummy_mem));
+		//
+		std::cout << "!!! A work-group uses " << local_byte_size_dummy_mem << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+#endif
 	}
 	//
 	// csr related
@@ -204,7 +226,7 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 		cl_ulong size;
 		device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 		//
-		local_byte_size_shdata = CSR_WORKGROUP_SIZE * sizeof(CL_REAL);
+		local_byte_size_shdata = max(csr_workgroup_size * sizeof(CL_REAL), csr_local_mem_size);
 		//
 		queue.enqueueWriteBuffer(d_ia_buffer, CL_TRUE, 0, byte_size_d_ia, d_hyb->csr.ia);
 		queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_hyb->csr.ja);
@@ -221,51 +243,51 @@ std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_
 		std::cout << "!!! A work-group uses " << local_byte_size_shdata << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 	}
 	//
-	cl_ulong nanoseconds;
-	cl_ulong total_nanoseconds = 0;
+	cl_ulong nanoseconds_1;
+	cl_ulong nanoseconds_2;
+	cl_ulong total_nanoseconds_1 = 0;
+	cl_ulong total_nanoseconds_2 = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
-		nanoseconds = 0;
+		nanoseconds_1 = 0;
+		nanoseconds_2 = 0;
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		if (d_hyb->ellg.nnz > 0)
 		{
-			nanoseconds +=
+			nanoseconds_1 +=
 				jc::run_and_time_kernel(kernel_ell,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE)),
-					cl::NDRange(WORKGROUP_SIZE));
-#else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
-#endif
+					cl::NDRange(jc::best_fit(d_hyb->ellg.n, ellg_workgroup_size)),
+					cl::NDRange(ellg_workgroup_size));
 		}
 		if (d_hyb->csr.nnz > 0)
 		{
-			nanoseconds +=
+			nanoseconds_2 +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
-					cl::NDRange(CSR_WORKGROUP_SIZE));
-#else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
-#endif
+					cl::NDRange(nworkgroups * csr_workgroup_size),
+					cl::NDRange(csr_workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
-		total_nanoseconds += nanoseconds;
+		printRunInfoHYB(r + 1, nanoseconds_1, nanoseconds_2, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_ell, instr_count_csr);
+		total_nanoseconds_1 += nanoseconds_1;
+		total_nanoseconds_2 += nanoseconds_2;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
-	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	double average_nanoseconds_1 = total_nanoseconds_1 / (double)REPEAT;
+	double average_nanoseconds_2 = total_nanoseconds_2 / (double)REPEAT;
+	printAverageRunInfoHYB(average_nanoseconds_1, average_nanoseconds_2, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_ell, instr_count_csr);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]++;
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_HYB_ELL(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
+{
+	return spmv_HYB_ELL_param(d_hyb, d_x, CSR_WORKGROUP_SIZE, WORKGROUP_SIZE, 0, 0);
 }
 #endif
 
@@ -314,11 +336,11 @@ std::vector<REAL> spmv_HYB_ELLG_sequential(struct hybellg_t* d_hyb, const std::v
 		{
 			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -329,7 +351,7 @@ std::vector<REAL> spmv_HYB_ELLG_sequential(struct hybellg_t* d_hyb, const std::v
 #endif
 
 #if HYB_ELLG
-std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HYB_ELLG_param(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x, unsigned int csr_workgroup_size, unsigned int ellg_workgroup_size, unsigned int csr_local_mem_size, unsigned int ellg_local_mem_size)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]--;
@@ -342,10 +364,10 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 		for (i = 0; i < d_hyb->csr.n; i++) row_len += d_hyb->csr.ia[i + 1] - d_hyb->csr.ia[i];
 		row_len = sqrt(row_len / d_hyb->csr.n);
 		for (coop = 1; coop < 32 && row_len >= coop; coop <<= 1);
-		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
+		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * csr_workgroup_size);
 		if (nworkgroups > 1500)
-			for (repeat = 1; (1 + (d_hyb->csr.n * coop - 1) / ((repeat + 1) * CSR_WORKGROUP_SIZE)) > 1500; repeat++);
-		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
+			for (repeat = 1; (1 + (d_hyb->csr.n * coop - 1) / ((repeat + 1) * csr_workgroup_size)) > 1500; repeat++);
+		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * csr_workgroup_size);
 	}
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
@@ -368,6 +390,16 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 		units_IndexType += d_hyb->csr.n + d_hyb->csr.nnz;
 	}
 	//
+	//Instruction count
+	long double instr_count_ellg = 6 + 1 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 9 + 2;
+	//
+	//Instruction count
+	long double instr_count_csr = 0;
+	if (d_hyb->csr.nnz > 0)
+	{
+		instr_count_csr = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+	}
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -384,6 +416,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
 	std::string ellg_macro = getGlobalConstants() +
+							" -DOVERRIDE_MEM=" + std::to_string(OVERRIDE_MEM) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
 							" -DSTRIDE_MATRIX=" + std::to_string(d_hyb->ellg.stride);
 	//
@@ -395,7 +428,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, ellg_macro.c_str());
 	cl::Kernel kernel_ellg{ program_ellg, "spmv_ellg" };
 	//
-	printHeaderInfoGPU(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + ellg_macro);
+	printHeaderInfoGPU_HYB(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + ellg_macro, instr_count_ellg, instr_count_csr);
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -433,6 +466,17 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 		kernel_ellg.setArg(2, d_a_buffer);
 		kernel_ellg.setArg(3, d_x_buffer);
 		kernel_ellg.setArg(4, dst_y_buffer);
+		//
+#if OVERRIDE_MEM
+		cl_ulong size;
+		device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
+		//
+		size_t local_byte_size_dummy_mem = ellg_local_mem_size;
+		//
+		kernel_ellg.setArg(5, cl::Local(local_byte_size_dummy_mem));
+		//
+		std::cout << "!!! A work-group uses " << local_byte_size_dummy_mem << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+#endif
 	}
 	//
 	// csr related
@@ -459,7 +503,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 		cl_ulong size;
 		device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 		//
-		local_byte_size_shdata = CSR_WORKGROUP_SIZE * sizeof(CL_REAL);
+		local_byte_size_shdata = max(csr_workgroup_size * sizeof(CL_REAL), csr_local_mem_size);
 		//
 		queue.enqueueWriteBuffer(d_ia_buffer, CL_TRUE, 0, byte_size_d_ia, d_hyb->csr.ia);
 		queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_hyb->csr.ja);
@@ -476,51 +520,51 @@ std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL
 		std::cout << "!!! A work-group uses " << local_byte_size_shdata << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 	}
 	//
-    cl_ulong nanoseconds;
-    cl_ulong total_nanoseconds = 0;
+    cl_ulong nanoseconds_1;
+    cl_ulong nanoseconds_2;
+    cl_ulong total_nanoseconds_1 = 0;
+    cl_ulong total_nanoseconds_2 = 0;
     //
 	for (int r = 0; r < REPEAT; r++)
 	{
-		nanoseconds = 0;
+		nanoseconds_1 = 0;
+		nanoseconds_2 = 0;
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		if (d_hyb->ellg.nnz > 0)
 		{
-			nanoseconds +=
+			nanoseconds_1 +=
 				jc::run_and_time_kernel(kernel_ellg,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(jc::best_fit(d_hyb->ellg.n, WORKGROUP_SIZE)),
-					cl::NDRange(WORKGROUP_SIZE));
-#else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
-#endif
+					cl::NDRange(jc::best_fit(d_hyb->ellg.n, ellg_workgroup_size)),
+					cl::NDRange(ellg_workgroup_size));
 		}
 		if (d_hyb->csr.nnz > 0)
 		{
-			nanoseconds +=
+			nanoseconds_2 +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
-					cl::NDRange(CSR_WORKGROUP_SIZE));
-#else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
-#endif
+					cl::NDRange(nworkgroups * csr_workgroup_size),
+					cl::NDRange(csr_workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
-		total_nanoseconds += nanoseconds;
+		printRunInfoHYB(r + 1, nanoseconds_1, nanoseconds_2, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_ellg, instr_count_csr);
+		total_nanoseconds_1 += nanoseconds_1;
+		total_nanoseconds_2 += nanoseconds_2;
 	}
     queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
-    double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+    double average_nanoseconds_1 = total_nanoseconds_1 / (double)REPEAT;
+    double average_nanoseconds_2 = total_nanoseconds_2 / (double)REPEAT;
+	printAverageRunInfoHYB(average_nanoseconds_1, average_nanoseconds_2, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_ellg, instr_count_csr);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]++;
 
     return dst_y;
+}
+
+std::vector<CL_REAL> spmv_HYB_ELLG(struct hybellg_t* d_hyb, const std::vector<CL_REAL> d_x)
+{
+	return spmv_HYB_ELLG_param(d_hyb, d_x, CSR_WORKGROUP_SIZE, WORKGROUP_SIZE, 0, 0);
 }
 #endif
 
@@ -570,11 +614,11 @@ std::vector<REAL> spmv_HYB_HLL_sequential(struct hybhll_t* d_hyb, const std::vec
 		{
 			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->hll.nhoff; i++) d_hyb->hll.hoff[i]++;
@@ -586,7 +630,7 @@ std::vector<REAL> spmv_HYB_HLL_sequential(struct hybhll_t* d_hyb, const std::vec
 #endif
 
 #if HYB_HLL
-std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_HYB_HLL_param(struct hybhll_t* d_hyb, const std::vector<CL_REAL> d_x, unsigned int csr_workgroup_size, unsigned int hll_workgroup_size, unsigned int csr_local_mem_size, unsigned int hll_local_mem_size)
 {
 	//decrement all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]--;
@@ -600,10 +644,10 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 		for (i = 0; i < d_hyb->csr.n; i++) row_len += d_hyb->csr.ia[i + 1] - d_hyb->csr.ia[i];
 		row_len = sqrt(row_len / d_hyb->csr.n);
 		for (coop = 1; coop < 32 && row_len >= coop; coop <<= 1);
-		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
+		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * csr_workgroup_size);
 		if (nworkgroups > 1500)
-			for (repeat = 1; (1 + (d_hyb->csr.n * coop - 1) / ((repeat + 1) * CSR_WORKGROUP_SIZE)) > 1500; repeat++);
-		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * CSR_WORKGROUP_SIZE);
+			for (repeat = 1; (1 + (d_hyb->csr.n * coop - 1) / ((repeat + 1) * csr_workgroup_size)) > 1500; repeat++);
+		nworkgroups = 1 + (d_hyb->csr.n * coop - 1) / (repeat * csr_workgroup_size);
 	}
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
@@ -626,6 +670,16 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 		units_IndexType += d_hyb->csr.n + d_hyb->csr.nnz;
 	}
 	//
+	//Instruction count
+	long double instr_count_hll = 10 + 1 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 4 + 2 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 11 + 2;
+	//
+	//Instruction count
+	long double instr_count_csr = 0;
+	if (d_hyb->csr.nnz > 0)
+	{
+		instr_count_csr = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+	}
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -645,6 +699,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
 	std::string hll_macro = getGlobalConstants() +
+							" -DOVERRIDE_MEM=" + std::to_string(OVERRIDE_MEM) +
 							" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->hll.n) +
 							" -DUNROLL=" + std::to_string(unroll_val);
@@ -657,7 +712,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, hll_macro.c_str());
 	cl::Kernel kernel_hll{ program_hll, "spmv_hll" };
 	//
-	printHeaderInfoGPU(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + hll_macro);
+	printHeaderInfoGPU_HYB(d_hyb->n, d_hyb->nnz, deviceName, "\nCSR kernel macros: " + csr_macro + "\nELL kernel macros: " + hll_macro, instr_count_hll, instr_count_csr);
 	//
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
 	size_t byte_size_dst_y = dst_y.size() * sizeof(CL_REAL);
@@ -701,6 +756,17 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 		kernel_hll.setArg(3, d_a_buffer);
 		kernel_hll.setArg(4, d_x_buffer);
 		kernel_hll.setArg(5, dst_y_buffer);
+		//
+#if OVERRIDE_MEM
+		cl_ulong size;
+		device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
+		//
+		size_t local_byte_size_dummy_mem = hll_local_mem_size;
+		//
+		kernel_hll.setArg(6, cl::Local(local_byte_size_dummy_mem));
+		//
+		std::cout << "!!! A work-group uses " << local_byte_size_dummy_mem << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
+#endif
 	}
 	//
 	// csr related
@@ -727,7 +793,7 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 		cl_ulong size;
 		device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 		//
-		local_byte_size_shdata = CSR_WORKGROUP_SIZE * sizeof(CL_REAL);
+		local_byte_size_shdata = max(csr_workgroup_size * sizeof(CL_REAL), csr_local_mem_size);
 		//
 		queue.enqueueWriteBuffer(d_ia_buffer, CL_TRUE, 0, byte_size_d_ia, d_hyb->csr.ia);
 		queue.enqueueWriteBuffer(d_ja_buffer, CL_TRUE, 0, byte_size_d_ja, d_hyb->csr.ja);
@@ -744,45 +810,40 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 		std::cout << "!!! A work-group uses " << local_byte_size_shdata << " bytes of the max local memory size of " << size << " bytes per Compute Unit !!!" << std::endl << std::endl;
 	}
 	//
-	cl_ulong nanoseconds;
-	cl_ulong total_nanoseconds = 0;
+	cl_ulong nanoseconds_1;
+	cl_ulong nanoseconds_2;
+	cl_ulong total_nanoseconds_1 = 0;
+	cl_ulong total_nanoseconds_2 = 0;
 	//
 	for (int r = 0; r < REPEAT; r++)
 	{
-		nanoseconds = 0;
+		nanoseconds_1 = 0;
+		nanoseconds_2 = 0;
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		if (d_hyb->hll.nnz > 0)
 		{
-			nanoseconds +=
+			nanoseconds_1 +=
 				jc::run_and_time_kernel(kernel_hll,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(jc::best_fit(d_hyb->hll.n, WORKGROUP_SIZE)),
-					cl::NDRange(WORKGROUP_SIZE));
-#else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
-#endif
+					cl::NDRange(jc::best_fit(d_hyb->hll.n, hll_workgroup_size)),
+					cl::NDRange(hll_workgroup_size));
 		}
 		if (d_hyb->csr.nnz > 0)
 		{
-			nanoseconds +=
+			nanoseconds_2 +=
 				jc::run_and_time_kernel(kernel_csr,
 					queue,
-#if !EXEC_WARP
-					cl::NDRange(nworkgroups * CSR_WORKGROUP_SIZE),
-					cl::NDRange(CSR_WORKGROUP_SIZE));
-#else
-					cl::NDRange(WARP_SIZE),
-					cl::NDRange(WARP_SIZE));
-#endif
+					cl::NDRange(nworkgroups * csr_workgroup_size),
+					cl::NDRange(csr_workgroup_size));
 		}
-		printRunInfo(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
-		total_nanoseconds += nanoseconds;
+		printRunInfoHYB(r + 1, nanoseconds_1, nanoseconds_2, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_hll, instr_count_csr);
+		total_nanoseconds_1 += nanoseconds_1;
+		total_nanoseconds_2 += nanoseconds_2;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
-	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	double average_nanoseconds_1 = total_nanoseconds_1 / (double)REPEAT;
+	double average_nanoseconds_2 = total_nanoseconds_2 / (double)REPEAT;
+	printAverageRunInfoHYB(average_nanoseconds_1, average_nanoseconds_2, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_hll, instr_count_csr);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->hll.nhoff; i++) d_hyb->hll.hoff[i]++;
@@ -790,6 +851,11 @@ std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_R
 	for (IndexType i = 0; i < d_hyb->csr.nnz; i++) d_hyb->csr.ja[i]++;
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_HYB_HLL(struct hybhll_t* d_hyb, const std::vector<CL_REAL> d_x)
+{
+	return spmv_HYB_HLL_param(d_hyb, d_x, CSR_WORKGROUP_SIZE, WORKGROUP_SIZE, 0, 0);
 }
 #endif
 

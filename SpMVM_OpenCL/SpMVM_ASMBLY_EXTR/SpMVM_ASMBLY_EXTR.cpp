@@ -121,7 +121,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + GMVM_KERNEL_FILE, context, device, macro.c_str());
         
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "GMVM_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED GMVM BINARY EXTRACTION --" << std::endl << std::endl;
 
         FreeMAT(&mat);
@@ -153,7 +153,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "CSR_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED CSR BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
         // -------------------------------------------- DIA struct
@@ -176,7 +176,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + DIA_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "DIA_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED DIA BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
 #if TRANSPOSED_DIA
@@ -196,7 +196,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_DIA_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "TRANSPOSED_DIA_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED TRANSPOSED DIA BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
         FreeDIA(&dia);
@@ -223,7 +223,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "HDIA_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED HDIA BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
 #if HDIA_OLD
@@ -242,7 +242,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HDIA_OLD_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "HDIA_OLD_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED HDIA (OLD) BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
         FreeHDIA(&hdia);
@@ -266,7 +266,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELL_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "ELL_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED ELL BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
 #if ELLG
@@ -281,7 +281,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + ELLG_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "ELLG_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED ELL-G BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
 #if TRANSPOSED_ELL || TRANSPOSED_ELLG
@@ -299,7 +299,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_ELL_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "TRANSPOSED_ELL_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED TRANSPOSED ELL BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
 #if TRANSPOSED_ELLG
@@ -315,7 +315,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + TRANSPOSED_ELLG_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "TRANSPOSED_ELLG_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED TRANSPOSED ELL-G BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
 #endif
@@ -340,7 +340,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + HLL_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "HLL_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED HLL BINARY EXTRACTION --" << std::endl << std::endl;
 #endif
         FreeHLL(&hll);
@@ -362,7 +362,7 @@ int main(void)
             jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + JAD_KERNEL_FILE, context, device, macro.c_str());
 
         output_file = (OUTPUT_FOLDER + (std::string)"/" + EXTR_OUTPUT_FOLDER + (std::string)"/" + "JAD_" + input_filenames[run] + getTimeOfRun() + EXTR_OUTPUT_FILEFORMAT);
-        dumpPTXCode(program, output_file);
+        dumpoBINCode(program, output_file);
         std::cout << "-- FINISHED JAD BINARY EXTRACTION --" << std::endl << std::endl;
         FreeJAD(&jad);
 #endif

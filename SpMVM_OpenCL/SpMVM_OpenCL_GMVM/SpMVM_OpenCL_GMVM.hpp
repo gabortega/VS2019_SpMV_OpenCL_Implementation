@@ -38,23 +38,34 @@ std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<RE
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = GMVM_sequential(d_mat, d_x, dst_y);
-		printRunInfo(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
 
 	return dst_y;
 }
 #endif
 
 #if GMVM
-std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d_x)
+std::vector<CL_REAL> spmv_GMVM_param(struct mat_t* d_mat, const std::vector<CL_REAL> d_x, unsigned int workgroup_size, unsigned int local_mem_size, unsigned int thread_count)
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//d_mat->val + d_x + dst_y
-	unsigned long long units_REAL = d_mat->n * d_mat->n + (((d_mat->n + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) * d_mat->n) + d_mat->n;
+	unsigned long long units_REAL = d_mat->n * d_mat->n + (((d_mat->n + workgroup_size - 1) / workgroup_size) * d_mat->n) + d_mat->n;
+	unsigned int n_wg = ((d_mat->n + workgroup_size - 1) / workgroup_size);
+#if !OVERRIDE_THREADS
 	//
+	//Instruction count
+	long double instr_count = 3 + 2 + n_wg * 7 + 2 + n_wg * (8 + 5 + workgroup_size * 9 + 2 + workgroup_size * 7 + 1) + 4;
+	//
+#else
+	//
+	//Instruction count
+	long double instr_count = 4 + 2 + n_wg * 7 + 2 + n_wg * (8 + 5 + workgroup_size * 9 + 2 + workgroup_size * 7 + 1) + 4;
+	//
+#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -68,14 +79,18 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 	std::string macro = getGlobalConstants() +
 						" -DN_MATRIX=" + std::to_string(d_mat->n) +
 						" -DNN_MATRIX=" + std::to_string(d_mat->n * d_mat->n) +
-						" -DN_WORKGROUPS=" + std::to_string((d_mat->n + WORKGROUP_SIZE - 1) / WORKGROUP_SIZE) +
-						" -DWORKGROUP_SIZE=" + std::to_string(WORKGROUP_SIZE);
+						" -DN_WORKGROUPS=" + std::to_string((d_mat->n + workgroup_size - 1) / workgroup_size) +
+						" -DWORKGROUP_SIZE=" + std::to_string(workgroup_size);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + GMVM_KERNEL_FILE, context, device, macro.c_str());
+#if !OVERRIDE_THREADS
 	cl::Kernel kernel{ program, "spmv_gmvm" };
+#else
+	cl::Kernel kernel{ program, "occ_spmv_gmvm" };
+#endif
 	//
-	printHeaderInfoGPU(d_mat->n, d_mat->nnz, deviceName, macro);
+	printHeaderInfoGPU(d_mat->n, d_mat->nnz, deviceName, macro, instr_count);
 	//
 	size_t byte_size_d_val = (unsigned long)d_mat->n * d_mat->n * sizeof(CL_REAL);
 	size_t byte_size_d_x = d_x.size() * sizeof(CL_REAL);
@@ -88,7 +103,7 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 	cl_ulong size;
 	device.getInfo(CL_DEVICE_LOCAL_MEM_SIZE, &size);
 	//
-	size_t local_byte_size_shx = WORKGROUP_SIZE * sizeof(CL_REAL);
+	size_t local_byte_size_shx = max(workgroup_size * sizeof(CL_REAL), local_mem_size);
 	//
 	queue.enqueueWriteBuffer(d_val_buffer, CL_TRUE, 0, byte_size_d_val, d_mat->val);
 	queue.enqueueWriteBuffer(d_x_buffer, CL_TRUE, 0, byte_size_d_x, d_x.data());
@@ -107,22 +122,26 @@ std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d
 		queue.enqueueWriteBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 		nanoseconds =
 			jc::run_and_time_kernel(kernel,
-				queue, 
-#if !EXEC_WARP
-				cl::NDRange(jc::best_fit(d_mat->n, WORKGROUP_SIZE)),
-				cl::NDRange(WORKGROUP_SIZE));
+				queue,
+#if !OVERRIDE_THREADS
+				cl::NDRange(jc::best_fit(d_mat->n, workgroup_size)),
 #else
-				cl::NDRange(WARP_SIZE),
-				cl::NDRange(WARP_SIZE));
+				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
-		printRunInfo(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
+				cl::NDRange(workgroup_size));
+		printRunInfo(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfo(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
+	printAverageRunInfo(average_nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
 
 	return dst_y;
+}
+
+std::vector<CL_REAL> spmv_GMVM(struct mat_t* d_mat, const std::vector<CL_REAL> d_x)
+{
+	return spmv_GMVM_param(d_mat, d_x, WORKGROUP_SIZE, 0, 0);
 }
 #endif
 

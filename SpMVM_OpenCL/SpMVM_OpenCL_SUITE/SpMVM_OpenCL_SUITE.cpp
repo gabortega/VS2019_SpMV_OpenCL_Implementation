@@ -30,7 +30,17 @@
 int main(void)
 {
     // Error checking
-#if CSR || DIA_SEQ || DIA || TRANSPOSED_DIA || HDIA_SEQ || HDIA || HDIA_OLD || ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG || HLL_SEQ || HLL || GMVM_SEQ || GMVM || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
+#if OVERRIDE_THREADS
+    std::cout << "!!! ERROR: OVERRIDE_THREADS CANNOT BE SET TO 1 !!!" << std::endl;
+    system("PAUSE");
+    exit(1);
+#endif
+#if OVERRIDE_MEM
+    std::cout << "!!! WARNING: OVERRIDE_MEM MUST IS SET TO 1   !!!" << std::endl;
+    std::cout << "!!! RESULTS MAY DIFFER FROM DEFAULT SETTINGS !!!" << std::endl;
+    system("PAUSE");
+#endif
+#if COO_STRUCTS
 #if DIA
     if (WORKGROUP_SIZE > MAX_NDIAG_PER_WG)
     {
@@ -50,30 +60,30 @@ int main(void)
 
     FILE* f;
     struct coo_t coo;
-#if GMVM_SEQ || GMVM
+#if MAT_STRUCTS
     struct mat_t mat;
 #endif
-#if CSR_SEQ || CSR || DIA_SEQ || DIA || HDIA_SEQ || HDIA ||ELL_SEQ || ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG || HLL_SEQ || HLL || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
+#if CSR_STRUCTS
     struct csr_t csr;
-#if DIA_SEQ || DIA || TRANSPOSED_DIA
+#if DIA_STRUCTS
     struct dia_t dia;
 #endif
-#if HDIA_SEQ || HDIA || HDIA_OLD
+#if HDIA_STRUCTS
     struct hdia_t hdia;
 #endif
-#if ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG
+#if ELLG_STRUCTS
     struct ellg_t ellg;
 #endif
-#if HLL_SEQ || HLL
+#if HLL_STRUCTS
     struct hll_t hll;
 #endif
-#if HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG
+#if HYB_ELLG_STRUCTS
     struct hybellg_t hyb_ellg;
 #endif
-#if HYB_HLL_SEQ || HYB_HLL
+#if HYB_HLL_STRUCTS
     struct hybhll_t hybhll_t;
 #endif
-#if  JAD_SEQ || JAD
+#if  JAD_STRUCTS
     struct jad_t jad;
 #endif
 #endif
@@ -126,10 +136,10 @@ int main(void)
         std::cout << "-- INPUT FILE LOADED --" << std::endl << std::endl;
 
         // -------------------------------------------- MAT struct
-#if GMVM_SEQ || GMVM
+#if MAT_STRUCTS
         std::cout << "-- (GMVM) PRE-PROCESSING INPUT --" << std::endl;
         COO_To_MAT(&coo, &mat, MAT_LOG);
-#if !(CSR || DIA_SEQ || DIA || HDIA_SEQ || HDIA || ELL_SEQ || ELL || ELLG || HLL_SEQ || HLL || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD)
+#if !(CSR_STRUCTS)
         FreeCOO(&coo);
 #endif
         std::cout << "-- (GMVM) DONE PRE-PROCESSING INPUT --" << std::endl << std::endl;
@@ -164,7 +174,7 @@ int main(void)
         FreeMAT(&mat);
 #endif
         // -------------------------------------------- CSR struct
-#if CSR || DIA_SEQ || DIA || TRANSPOSED_DIA || HDIA_SEQ || HDIA || ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG || HLL_SEQ || HLL || HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG || HYB_HLL_SEQ || HYB_HLL || JAD_SEQ || JAD
+#if CSR_STRUCTS
         std::cout << "-- (CSR) PRE-PROCESSING INPUT --" << std::endl;
         COO_To_CSR(&coo, &csr, CSR_LOG);
         FreeCOO(&coo);
@@ -198,7 +208,7 @@ int main(void)
         std::cout << std::endl;
 #endif
         // -------------------------------------------- DIA struct
-#if DIA_SEQ || DIA || TRANSPOSED_DIA
+#if DIA_STRUCTS
         std::cout << "-- (DIA) PRE-PROCESSING INPUT --" << std::endl;
         if (!CSR_To_DIA(&csr, &dia, DIA_LOG))
             std::cout << "DIA IS INCOMPLETE" << std::endl;
@@ -248,7 +258,7 @@ int main(void)
         FreeDIA(&dia);
 #endif
         // -------------------------------------------- HDIA struct
-#if HDIA_SEQ || HDIA || HDIA_OLD
+#if HDIA_STRUCTS
         std::cout << "-- (HDIA) PRE-PROCESSING INPUT --" << std::endl;
         if (!CSR_To_HDIA(&csr, &hdia, HDIA_LOG))
             std::cout << "HDIA IS INCOMPLETE" << std::endl;
@@ -295,7 +305,7 @@ int main(void)
         FreeHDIA(&hdia);
 #endif
         // -------------------------------------------- ELLG struct
-#if ELL_SEQ || ELL || TRANSPOSED_ELL || ELLG_SEQ || ELLG || TRANSPOSED_ELLG
+#if ELLG_STRUCTS
         std::cout << "-- (ELL-G) PRE-PROCESSING INPUT --" << std::endl;
         if (!CSR_To_ELLG(&csr, &ellg, ELLG_LOG))
             std::cout << "ELL-G HAS BEEN TRUNCATED" << std::endl;
@@ -386,7 +396,7 @@ int main(void)
         FreeELLG(&ellg);
 #endif
         // -------------------------------------------- HLL struct
-#if HLL_SEQ || HLL
+#if HLL_STRUCTS
         std::cout << "-- (HLL) PRE-PROCESSING INPUT --" << std::endl;
         if (!CSR_To_HLL(&csr, &hll, HLL_LOG))
             std::cout << "HLL HAS BEEN TRUNCATED" << std::endl;
@@ -422,7 +432,7 @@ int main(void)
         FreeHLL(&hll);
 #endif
         // -------------------------------------------- HYB-ELLG struct
-#if HYB_ELL_SEQ || HYB_ELL || HYB_ELLG_SEQ || HYB_ELLG
+#if HYB_ELLG_STRUCTS
         std::cout << "-- (HYB-ELL-G) PRE-PROCESSING INPUT --" << std::endl;
         CSR_To_HYBELLG(&csr, &hyb_ellg, HYB_ELLG_LOG);
         std::cout << "-- (HYB-ELL-G) DONE PRE-PROCESSING INPUT --" << std::endl << std::endl;
@@ -485,7 +495,7 @@ int main(void)
         FreeHYBELLG(&hyb_ellg);
 #endif
         // -------------------------------------------- HYB-HLL struct
-#if HYB_HLL_SEQ || HYB_HLL
+#if HYB_HLL_STRUCTS
         std::cout << "-- (HYB-HLL) PRE-PROCESSING INPUT --" << std::endl;
         CSR_To_HYBHLL(&csr, &hybhll_t, HYB_HLL_LOG);
         std::cout << "-- (HYB-HLL) DONE PRE-PROCESSING INPUT --" << std::endl << std::endl;
@@ -520,7 +530,7 @@ int main(void)
         FreeHYBHLL(&hybhll_t);
 #endif
         // -------------------------------------------- JAD struct
-#if JAD_SEQ || JAD
+#if JAD_STRUCTS
         std::cout << "-- (JAD) PRE-PROCESSING INPUT --" << std::endl;
         CSR_To_JAD(&csr, &jad, JAD_LOG);
         std::cout << "-- (JAD) DONE PRE-PROCESSING INPUT --" << std::endl << std::endl;
