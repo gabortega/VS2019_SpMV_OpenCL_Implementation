@@ -162,7 +162,7 @@ def main():
                 line = average_cpwi[i]
                 line.insert(0, matrices[i])
                 writer.writerow(line)
-        with open(sys.argv[1] + ".average_instr_count.csv", "w", newline="") as f6:
+        with open(sys.argv[1] + ".instr_count.csv", "w", newline="") as f6:
             writer = csv.writer(f6, delimiter=delimiter)
             writer.writerow(header)
             for i in range(len(matrices)):
