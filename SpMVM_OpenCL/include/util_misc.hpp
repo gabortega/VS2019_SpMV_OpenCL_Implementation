@@ -22,7 +22,7 @@ long double getCPWI(long double instr_count, unsigned long long nanoseconds)
 	else
 	{
 		// (runtime * clock frequency) / instr_count * CORE_COUNT * WARP_SIZE
-		return (long double)((nanoseconds / 1e9) * (1 / CORE_CLOCK_SPEED)) * CORE_COUNT * WARP_SIZE;
+		return ((nanoseconds / 1e9) * CORE_CLOCK_SPEED)/instr_count * CORE_COUNT * WARP_SIZE;
 	}
 }
 
@@ -50,12 +50,12 @@ void printHeaderInfoSEQ(unsigned long long matrix_n, IndexType matrix_nnz)
 	std::cout << "Matrix dimensions: " << matrix_n << std::endl << "Matrix non-zero element count: " << matrix_nnz << std::endl << "Matrix density: " << getMatrixDensity(matrix_n, matrix_nnz) << std::endl << std::endl;
 }
 
-void printRunInfoGPUSEQ(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+void printRunInfoSEQ(unsigned long long repeat, unsigned long long nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
 {
 	std::cout << "Run: " << repeat << " | Time elapsed: " << nanoseconds << " ns | Effective throughput: " << (2 * nnz / (nanoseconds / 1e9)) / 1e9 << " GFLOPS\n";
 }
 
-void printAverageRunInfoGPUSEQ(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
+void printAverageRunInfoSEQ(unsigned long long average_nanoseconds, unsigned long long nnz, unsigned long long units_REAL, unsigned long long units_IndexType)
 {
 	std::cout << std::endl << "Average time: " << average_nanoseconds << " ns | Average effective throughput: " << (2 * nnz / (average_nanoseconds / 1e9)) / 1e9 << " GFLOPS | Average effective bandwidth: " << ((units_REAL * sizeof(REAL)) + (units_IndexType * sizeof(IndexType))) / (average_nanoseconds / 1e9) / 1e9 << " GB/s\n";
 }

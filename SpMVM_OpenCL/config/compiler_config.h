@@ -13,10 +13,10 @@
 #define USE_CONSTANT_MEM 1
 //
 // Force thread count on all kernels
-#define OVERRIDE_THREADS 1
+#define OVERRIDE_THREADS 0
 //
 // Force local memory use on kernels that don't use local memory
-#define OVERRIDE_MEM 1
+#define OVERRIDE_MEM 0
 //
 // This setting is required in order to pre-allocate sufficient space
 // for the diag array of the DIA format.
@@ -92,22 +92,22 @@
 #define CSR_WORKGROUP_COUNT_THRESHOLD 1500 // default is 1500
 //
 // Sequential kernels to run (0: Off; 1: On)
-#define GMVM_SEQ 1
+#define GMVM_SEQ 0
 //
-#define CSR_SEQ 1
+#define CSR_SEQ 0
 //
-#define DIA_SEQ 1
-#define HDIA_SEQ 1
+#define DIA_SEQ 0
+#define HDIA_SEQ 0
 //
-#define ELL_SEQ 1
-#define ELLG_SEQ 1
-#define HLL_SEQ 1
+#define ELL_SEQ 0
+#define ELLG_SEQ 0
+#define HLL_SEQ 0
 //
-#define HYB_ELL_SEQ 1
-#define HYB_ELLG_SEQ 1
-#define HYB_HLL_SEQ 1
+#define HYB_ELL_SEQ 0
+#define HYB_ELLG_SEQ 0
+#define HYB_HLL_SEQ 0
 //
-#define JAD_SEQ 1
+#define JAD_SEQ 0
 //
 // GPU Kernels to run (0: Off; 1: On)
 #define GMVM 1
@@ -169,7 +169,7 @@
 /*--------------------------------------------------*/
 //            Input/Output related
 //
-#define INPUT_FILE_MODE 1 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
+#define INPUT_FILE_MODE 0 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
 //
 #define INPUT_FOLDER "../input"
 #define INPUT_FILE "_test_matrix_1.mtx"

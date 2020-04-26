@@ -67,11 +67,11 @@ std::vector<REAL> spmv_HYB_ELL_sequential(struct hybellg_t* d_hyb, const std::ve
 		{
 			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
 		}
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -269,14 +269,14 @@ std::vector<CL_REAL> spmv_HYB_ELL_param(struct hybellg_t* d_hyb, const std::vect
 					cl::NDRange(nworkgroups * csr_workgroup_size),
 					cl::NDRange(csr_workgroup_size));
 		}
-		printRunInfoGPUGPU_HYB(r + 1, nanoseconds_csr, nanoseconds_ell, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ell);
+		printRunInfoGPU_HYB(r + 1, nanoseconds_csr, nanoseconds_ell, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ell);
 		total_nanoseconds_ell += nanoseconds_ell;
 		total_nanoseconds_csr += nanoseconds_csr;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds_ell = total_nanoseconds_ell / (double)REPEAT;
 	double average_nanoseconds_csr = total_nanoseconds_csr / (double)REPEAT;
-	printAverageRunInfoGPUGPU_HYB(average_nanoseconds_csr, average_nanoseconds_ell, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ell);
+	printAverageRunInfoGPU_HYB(average_nanoseconds_csr, average_nanoseconds_ell, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ell);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -336,11 +336,11 @@ std::vector<REAL> spmv_HYB_ELLG_sequential(struct hybellg_t* d_hyb, const std::v
 		{
 			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
 		}
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -546,14 +546,14 @@ std::vector<CL_REAL> spmv_HYB_ELLG_param(struct hybellg_t* d_hyb, const std::vec
 					cl::NDRange(nworkgroups * csr_workgroup_size),
 					cl::NDRange(csr_workgroup_size));
 		}
-		printRunInfoGPUGPU_HYB(r + 1, nanoseconds_csr, nanoseconds_ellg, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ellg);
+		printRunInfoGPU_HYB(r + 1, nanoseconds_csr, nanoseconds_ellg, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ellg);
 		total_nanoseconds_ellg += nanoseconds_ellg;
 		total_nanoseconds_csr += nanoseconds_csr;
 	}
     queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
     double average_nanoseconds_ellg = total_nanoseconds_ellg / (double)REPEAT;
     double average_nanoseconds_csr = total_nanoseconds_csr / (double)REPEAT;
-	printAverageRunInfoGPUGPU_HYB(average_nanoseconds_csr, average_nanoseconds_ellg, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ellg);
+	printAverageRunInfoGPU_HYB(average_nanoseconds_csr, average_nanoseconds_ellg, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_ellg);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->ellg.stride * *(d_hyb->ellg.nell + d_hyb->ellg.n); i++) d_hyb->ellg.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->csr.n + 1; i++) d_hyb->csr.ia[i]++;
@@ -614,11 +614,11 @@ std::vector<REAL> spmv_HYB_HLL_sequential(struct hybhll_t* d_hyb, const std::vec
 		{
 			nanoseconds += CSR_sequential(&(d_hyb->csr), d_x, dst_y);
 		}
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hyb->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->hll.nhoff; i++) d_hyb->hll.hoff[i]++;
@@ -836,14 +836,14 @@ std::vector<CL_REAL> spmv_HYB_HLL_param(struct hybhll_t* d_hyb, const std::vecto
 					cl::NDRange(nworkgroups * csr_workgroup_size),
 					cl::NDRange(csr_workgroup_size));
 		}
-		printRunInfoGPUGPU_HYB(r + 1, nanoseconds_csr, nanoseconds_hll, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_hll);
+		printRunInfoGPU_HYB(r + 1, nanoseconds_csr, nanoseconds_hll, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_hll);
 		total_nanoseconds_hll += nanoseconds_hll;
 		total_nanoseconds_csr += nanoseconds_csr;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds_hll = total_nanoseconds_hll / (double)REPEAT;
 	double average_nanoseconds_csr = total_nanoseconds_csr / (double)REPEAT;
-	printAverageRunInfoGPUGPU_HYB(average_nanoseconds_csr, average_nanoseconds_hll, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_hll);
+	printAverageRunInfoGPU_HYB(average_nanoseconds_csr, average_nanoseconds_hll, (d_hyb->nnz), units_REAL, units_IndexType, instr_count_csr, instr_count_hll);
 	//increment all values
 	for (IndexType i = 0; i < d_hyb->hll.total_mem; i++) d_hyb->hll.jcoeff[i]++;
 	for (IndexType i = 0; i < d_hyb->hll.nhoff; i++) d_hyb->hll.hoff[i]++;

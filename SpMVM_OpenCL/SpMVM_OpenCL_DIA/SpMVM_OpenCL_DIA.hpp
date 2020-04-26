@@ -49,11 +49,11 @@ std::vector<REAL> spmv_DIA_sequential(struct dia_t* d_dia, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = DIA_sequential(d_dia, d_x, dst_y);
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_dia->nnz), units_REAL, units_IndexType);
 
 	return dst_y;
 }
@@ -338,11 +338,11 @@ std::vector<REAL> spmv_HDIA_sequential(struct hdia_t* d_hdia, const std::vector<
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = HDIA_sequential(d_hdia, d_x, dst_y);
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hdia->nnz), units_REAL, units_IndexType);
 
 	return dst_y;
 }

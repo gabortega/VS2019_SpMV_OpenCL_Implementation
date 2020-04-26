@@ -43,11 +43,11 @@ std::vector<REAL> spmv_ELL_sequential(struct ellg_t* d_ell, const std::vector<RE
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = ELL_sequential(d_ell, d_x, dst_y);
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_ell->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_ell->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_ell->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_ell->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]++;
 
@@ -301,11 +301,11 @@ std::vector<REAL> spmv_ELLG_sequential(struct ellg_t* d_ellg, const std::vector<
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = ELLG_sequential(d_ellg, d_x, dst_y);
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]++;
 
@@ -573,11 +573,11 @@ std::vector<REAL> spmv_HLL_sequential(struct hll_t* d_hll, const std::vector<REA
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = HLL_sequential(d_hll, d_x, dst_y);
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_hll->nnz), units_REAL, units_IndexType);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_hll->nnz), units_REAL, units_IndexType);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_hll->nnz), units_REAL, units_IndexType);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_hll->nnz), units_REAL, units_IndexType);
 	//increment all values
 	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]++;
 	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]++;

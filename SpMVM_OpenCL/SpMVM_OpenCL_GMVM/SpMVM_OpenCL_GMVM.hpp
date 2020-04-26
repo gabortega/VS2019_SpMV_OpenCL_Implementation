@@ -38,11 +38,11 @@ std::vector<REAL> spmv_GMVM_sequential(struct mat_t* d_mat, const std::vector<RE
 	{
 		std::fill(dst_y.begin(), dst_y.end(), 0);
 		nanoseconds = GMVM_sequential(d_mat, d_x, dst_y);
-		printRunInfoGPUSEQ(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
+		printRunInfoSEQ(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0);
 		total_nanoseconds += nanoseconds;
 	}
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPUSEQ(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
+	printAverageRunInfoSEQ(average_nanoseconds, (d_mat->nnz), units_REAL, 0);
 
 	return dst_y;
 }
