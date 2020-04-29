@@ -142,7 +142,8 @@ std::vector<CL_REAL> spmv_HYB_ELL_param(struct hybellg_t* d_hyb, const std::vect
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
-							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
+							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n) +
+							" -DWORKGROUP_SIZE=" + std::to_string(csr_workgroup_size);
 	std::string ell_macro = getGlobalConstants() +
 							" -DOVERRIDE_MEM=" + std::to_string(OVERRIDE_MEM) +
 							" -DNELL=" + std::to_string(*(d_hyb->ellg.nell + d_hyb->ellg.n)) +
@@ -414,7 +415,8 @@ std::vector<CL_REAL> spmv_HYB_ELLG_param(struct hybellg_t* d_hyb, const std::vec
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
-							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
+							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n) +
+							" -DWORKGROUP_SIZE=" + std::to_string(csr_workgroup_size);
 	std::string ellg_macro = getGlobalConstants() +
 							" -DOVERRIDE_MEM=" + std::to_string(OVERRIDE_MEM) +
 							" -DN_MATRIX=" + std::to_string(d_hyb->ellg.n) +
@@ -697,7 +699,8 @@ std::vector<CL_REAL> spmv_HYB_HLL_param(struct hybhll_t* d_hyb, const std::vecto
 							" -DCSR_REPEAT=" + std::to_string(repeat) +
 							" -DCSR_COOP=" + std::to_string(coop) +
 							" -DUNROLL_SHARED=" + std::to_string(coop / 4) +
-							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n);
+							" -DN_MATRIX=" + std::to_string(d_hyb->csr.n) +
+							" -DWORKGROUP_SIZE=" + std::to_string(csr_workgroup_size);
 	std::string hll_macro = getGlobalConstants() +
 							" -DOVERRIDE_MEM=" + std::to_string(OVERRIDE_MEM) +
 							" -DHACKSIZE=" + std::to_string(HLL_HACKSIZE) +

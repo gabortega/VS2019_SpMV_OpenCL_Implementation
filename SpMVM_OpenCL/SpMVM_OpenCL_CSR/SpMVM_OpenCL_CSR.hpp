@@ -87,12 +87,12 @@ std::vector<CL_REAL> spmv_CSR_param(struct csr_t* d_csr, const std::vector<CL_RE
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
-	long double instr_count = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+	long double instr_count = 8 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
 	//
 #else
 	//
 	//Instruction count
-	long double instr_count = 11 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 14);
+	long double instr_count = 14 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 14);
 	//
 #endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
@@ -109,7 +109,8 @@ std::vector<CL_REAL> spmv_CSR_param(struct csr_t* d_csr, const std::vector<CL_RE
 						" -DCSR_REPEAT=" + std::to_string(repeat) +
 						" -DCSR_COOP=" + std::to_string(coop) +
 						" -DUNROLL_SHARED=" + std::to_string(coop/4) +
-						" -DN_MATRIX=" + std::to_string(d_csr->n);
+						" -DN_MATRIX=" + std::to_string(d_csr->n) +
+						" -DWORKGROUP_SIZE=" + std::to_string(workgroup_size);
 	//
 	cl::Program program =
 		jc::build_program_from_file(KERNEL_FOLDER + (std::string)"/" + CSR_KERNEL_FILE, context, device, macro.c_str());
