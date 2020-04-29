@@ -126,7 +126,7 @@ def main():
                     average_runtimes[-1].append(tmp_line[2].replace(".",decimal_separator))
                     average_gflops[-1].append(tmp_line[8].replace(".",decimal_separator))
                     average_gbps[-1].append(tmp_line[14].replace(".",decimal_separator))
-                    average_cpwi[-1].append(tmp_line[14].replace(".",decimal_separator))
+                    average_cpwi[-1].append(tmp_line[-1].replace(".",decimal_separator))
 
                     runtimes.clear()
                     gflops.clear()
