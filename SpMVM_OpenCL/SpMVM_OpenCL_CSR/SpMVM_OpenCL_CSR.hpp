@@ -164,12 +164,12 @@ std::vector<CL_REAL> spmv_CSR_param(struct csr_t* d_csr, const std::vector<CL_RE
 				queue,
 				cl::NDRange(nworkgroups * workgroup_size),
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU(r + 1, nanoseconds, (d_csr->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU_CSR(r + 1, nanoseconds, (d_csr->nnz), coop, units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_csr->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU_CSR(average_nanoseconds, (d_csr->nnz), coop, units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;

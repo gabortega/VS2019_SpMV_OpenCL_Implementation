@@ -10,7 +10,7 @@
 #define PRECISION 1
 //
 // Use constant memory
-#define USE_CONSTANT_MEM 1
+#define USE_CONSTANT_MEM 0
 //
 // Force thread count on all kernels
 #define OVERRIDE_THREADS 0
@@ -169,7 +169,7 @@
 /*--------------------------------------------------*/
 //            Input/Output related
 //
-#define INPUT_FILE_MODE 0 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
+#define INPUT_FILE_MODE 1 // 0 for standard input files (i.e. .../input/); 1 for generated input files (i.e. .../input/random/)
 //
 #define INPUT_FOLDER "../input"
 #define INPUT_FILE "_test_matrix_1.mtx"
