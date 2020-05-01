@@ -10,7 +10,7 @@
 #define PRECISION 1
 //
 // Use constant memory
-#define USE_CONSTANT_MEM 0
+#define USE_CONSTANT_MEM 1
 //
 // Force thread count on all kernels
 #define OVERRIDE_THREADS 0

@@ -27,7 +27,7 @@ __kernel void spmv_hll(
 {
 	__private unsigned int row_id = get_global_id(0);
 
-	__private unsigned int row_hack_id, row_nell, row_hoff;
+	__private unsigned int row_hack_id, row_nell, row_hoff, hack_row;
 
 	__private unsigned int i, j, k;
 	__private REAL r;
@@ -37,12 +37,13 @@ __kernel void spmv_hll(
 	row_hack_id = row_id / HACKSIZE;
 	row_nell = d_nell[row_hack_id];
 	row_hoff = d_hoff[row_hack_id];
+	hack_row = row_id % HACKSIZE;
 
 	r = 0.0;
 #pragma unroll(UNROLL)
 	for (i = 0; i < row_nell; i++)
 	{
-		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
+		j = i * HACKSIZE + hack_row + row_hoff;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
 	dst_y[row_id] = r;
@@ -72,7 +73,7 @@ __kernel void occ_spmv_hll(
 {
 	__private unsigned int row_id = get_global_id(0) % N_MATRIX;
 
-	__private unsigned int row_hack_id, row_nell, row_hoff;
+	__private unsigned int row_hack_id, row_nell, row_hoff, hack_row;
 
 	__private unsigned int i, j, k;
 	__private REAL r;
@@ -82,12 +83,13 @@ __kernel void occ_spmv_hll(
 	row_hack_id = row_id / HACKSIZE;
 	row_nell = d_nell[row_hack_id];
 	row_hoff = d_hoff[row_hack_id];
+	hack_row = row_id % HACKSIZE;
 
 	r = 0.0;
 #pragma unroll(UNROLL)
 	for (i = 0; i < row_nell; i++)
 	{
-		j = i * HACKSIZE + (row_id % HACKSIZE) + row_hoff;
+		j = i * HACKSIZE + hack_row + row_hoff;
 		r += d_a[j] * d_x[d_jcoeff[j]];
 	}
 	if (get_global_id(0) < N_MATRIX)

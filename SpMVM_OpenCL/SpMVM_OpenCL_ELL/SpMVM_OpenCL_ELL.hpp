@@ -604,12 +604,12 @@ std::vector<CL_REAL> spmv_HLL_param(struct hll_t* d_hll, const std::vector<CL_RE
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
-	long double instr_count = 10 + 1 + *(d_hll->nell + d_hll->nhoff - 1) * 4 + 2 + *(d_hll->nell + d_hll->nhoff - 1) * 11 + 2;
+	long double instr_count = 12 + 1 + *(d_hll->nell + d_hll->nhoff - 1) * 4 + 2 + *(d_hll->nell + d_hll->nhoff - 1) * 10 + 2;
 	//
 #else
 	//
 	//Instruction count
-	long double instr_count = 11 + 1 + *(d_hll->nell + d_hll->nhoff - 1) * 4 + 2 + *(d_hll->nell + d_hll->nhoff - 1) * 11 + 4;
+	long double instr_count = 11 + 1 + *(d_hll->nell + d_hll->nhoff - 1) * 4 + 2 + *(d_hll->nell + d_hll->nhoff - 1) * 10 + 4;
 	//
 #endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
