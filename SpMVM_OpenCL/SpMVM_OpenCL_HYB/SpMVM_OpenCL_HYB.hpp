@@ -119,7 +119,11 @@ std::vector<CL_REAL> spmv_HYB_ELL_param(struct hybellg_t* d_hyb, const std::vect
 	}
 	//
 	//Instruction count
-	long double instr_count_ell = 4 + 1 + *(d_hyb->ellg.nell + d_hyb->n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->n) * 9 + 2;
+	long double instr_count_ell = 0;
+	if (d_hyb->ellg.nnz > 0)
+	{
+		instr_count_ell = 4 + 1 + *(d_hyb->ellg.nell + d_hyb->n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->n) * 9 + 2;
+	}
 	//
 	//Instruction count
 	long double instr_count_csr = 0;
@@ -392,7 +396,11 @@ std::vector<CL_REAL> spmv_HYB_ELLG_param(struct hybellg_t* d_hyb, const std::vec
 	}
 	//
 	//Instruction count
-	long double instr_count_ellg = 6 + 1 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 9 + 2;
+	long double instr_count_ellg = 0;
+	if (d_hyb->ellg.nnz > 0)
+	{
+		instr_count_ellg = 6 + 1 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 9 + 2;
+	}
 	//
 	//Instruction count
 	long double instr_count_csr = 0;
@@ -673,7 +681,11 @@ std::vector<CL_REAL> spmv_HYB_HLL_param(struct hybhll_t* d_hyb, const std::vecto
 	}
 	//
 	//Instruction count
-	long double instr_count_hll = 10 + 1 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 4 + 2 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 11 + 2;
+	long double instr_count_hll = 0;
+	if (d_hyb->hll.nnz > 0)
+	{
+		instr_count_hll = 12 + 1 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 4 + 2 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 10 + 2;
+	}
 	//
 	//Instruction count
 	long double instr_count_csr = 0;
