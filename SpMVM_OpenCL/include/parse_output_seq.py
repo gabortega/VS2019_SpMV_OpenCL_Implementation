@@ -30,16 +30,12 @@ def main():
         runtimes = []
         gflops = []
         gbps = []
-        cpwi = []
         average_runtimes = []
         average_gflops = []
         average_gbps = []
-        average_cpwi = []
-        instruction_count = []
         percentile_runtimes = {}
         percentile_gflops = {}
         percentile_gbps = {}
-        percentile_cpwi = {}
         delimiter = cfg.delimiter
         decimal_separator = cfg.decimal_separator
 
@@ -52,7 +48,6 @@ def main():
                 percentile_runtimes[num] = []
                 percentile_gflops[num] = []
                 percentile_gbps[num] = []
-                percentile_cpwi[num] = []
 
         if args == 1:
             f1_lines = f1.readlines()
@@ -64,11 +59,6 @@ def main():
                     average_runtimes.append([])
                     average_gflops.append([])
                     average_gbps.append([])
-                    average_cpwi.append([])
-                    instruction_count.append([])
-                elif "Total kernel instructions:" in line:
-                    tmp_line = line.split()
-                    instruction_count[-1].append(tmp_line[-1].replace(".",decimal_separator))
                 elif "-- STARTING " in line:
                     tmp_line = line.replace("-- STARTING ", "").replace(" OPERATION --", "").strip()
                     if not tmp_line in header:
@@ -78,7 +68,6 @@ def main():
                     average_runtimes[-1].append(tmp_line[2].replace(".",decimal_separator))
                     average_gflops[-1].append(tmp_line[8].replace(".",decimal_separator))
                     average_gbps[-1].append(tmp_line[14].replace(".",decimal_separator))
-                    average_cpwi[-1].append(tmp_line[-1].replace(".",decimal_separator))
             f1.close()
         elif args > 1 and len(percentiles) > 0:
             f1_lines = f1.readlines()
@@ -90,18 +79,11 @@ def main():
                     average_runtimes.append([])
                     average_gflops.append([])
                     average_gbps.append([])
-                    average_cpwi.append([])
 
                     for percentile in percentiles:
                         percentile_runtimes[percentile].append([])
                         percentile_gflops[percentile].append([])
                         percentile_gbps[percentile].append([])
-                        percentile_cpwi[percentile].append([])
-
-                    instruction_count.append([])
-                elif "Total kernel instructions:" in line:
-                    tmp_line = line.split()
-                    instruction_count[-1].append(tmp_line[-1].replace(".",decimal_separator))
                 elif "-- STARTING " in line:
                     tmp_line = line.replace("-- STARTING ", "").replace(" OPERATION --", "").strip()
                     if not tmp_line in header:
@@ -111,28 +93,23 @@ def main():
                     runtimes.append(convert_to_num(tmp_line[5]))
                     gflops.append(convert_to_num(tmp_line[10]))
                     gbps.append(convert_to_num(tmp_line[15]))
-                    cpwi.append(convert_to_num(tmp_line[-1]))
                 elif "Average time" in line:
                     runtimes.sort()
                     gflops.sort()
                     gbps.sort()
-                    cpwi.sort()
                     for percentile in percentiles:
                         percentile_runtimes[percentile][-1].append(get_percentile(runtimes, percentile))
                         percentile_gflops[percentile][-1].append(get_percentile(gflops, percentile))
                         percentile_gbps[percentile][-1].append(get_percentile(gbps, percentile))
-                        percentile_cpwi[percentile][-1].append(get_percentile(cpwi, percentile))
 
                     tmp_line = line.split()
                     average_runtimes[-1].append(tmp_line[2].replace(".",decimal_separator))
                     average_gflops[-1].append(tmp_line[8].replace(".",decimal_separator))
                     average_gbps[-1].append(tmp_line[14].replace(".",decimal_separator))
-                    average_cpwi[-1].append(tmp_line[-1].replace(".",decimal_separator))
 
                     runtimes.clear()
                     gflops.clear()
                     gbps.clear()
-                    cpwi.clear()
             f1.close()
 
         with open(sys.argv[1] + ".average_runtimes.csv", "w", newline="") as f2:
@@ -154,20 +131,6 @@ def main():
             writer.writerow(header)
             for i in range(len(matrices)):
                 line = average_gbps[i]
-                line.insert(0, matrices[i])
-                writer.writerow(line)
-        with open(sys.argv[1] + ".average_cpwi.csv", "w", newline="") as f5:
-            writer = csv.writer(f5, delimiter=delimiter)
-            writer.writerow(header)
-            for i in range(len(matrices)):
-                line = average_cpwi[i]
-                line.insert(0, matrices[i])
-                writer.writerow(line)
-        with open(sys.argv[1] + ".instr_count.csv", "w", newline="") as f6:
-            writer = csv.writer(f6, delimiter=delimiter)
-            writer.writerow(header)
-            for i in range(len(matrices)):
-                line = instruction_count[i]
                 line.insert(0, matrices[i])
                 writer.writerow(line)
 
@@ -192,13 +155,6 @@ def main():
                     writer.writerow(header)
                     for i in range(len(matrices)):
                         line = list(str(x).replace(".",decimal_separator) for x in percentile_gbps[percentile][i])
-                        line.insert(0, matrices[i])
-                        writer.writerow(line)
-                with open(sys.argv[1] + ".percentile_" + str(percentile) + "_cpwi.csv", "w", newline="") as f4:
-                    writer = csv.writer(f4, delimiter=delimiter)
-                    writer.writerow(header)
-                    for i in range(len(matrices)):
-                        line = list(str(x).replace(".",decimal_separator) for x in percentile_cpwi[percentile][i])
                         line.insert(0, matrices[i])
                         writer.writerow(line)
     else:

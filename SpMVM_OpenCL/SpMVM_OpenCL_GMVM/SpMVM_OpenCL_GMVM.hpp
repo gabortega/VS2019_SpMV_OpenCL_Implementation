@@ -53,19 +53,30 @@ std::vector<CL_REAL> spmv_GMVM_param(struct mat_t* d_mat, const std::vector<CL_R
 {
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//d_mat->val + d_x + dst_y
-	unsigned long long units_REAL = d_mat->n * d_mat->n + (((d_mat->n + workgroup_size - 1) / workgroup_size) * d_mat->n) + d_mat->n;
+	//
+	unsigned long long total_n = d_mat->n;
+	unsigned long long total_nnz = d_mat->nnz;
+	//
 	unsigned int n_wg = ((d_mat->n + workgroup_size - 1) / workgroup_size);
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
 	long double instr_count = 3 + 2 + n_wg * 7 + 2 + n_wg * (8 + 5 + workgroup_size * 9 + 2 + workgroup_size * 7 + 1) + 4;
+	instr_count *= d_mat->n;
 	//
 #else
+	total_n = thread_count;
+	IndexType row_len = d_mat->nnz / d_mat->n;
+	total_nnz = row_len * thread_count;
 	//
 	//Instruction count
 	long double instr_count = 4 + 2 + n_wg * 7 + 2 + n_wg * (8 + 5 + workgroup_size * 9 + 2 + workgroup_size * 7 + 1) + 4;
+	instr_count *= jc::best_fit(thread_count, workgroup_size);
 	//
 #endif
+	//
+	unsigned long long units_REAL = total_n * d_mat->n + (((d_mat->n + workgroup_size - 1) / workgroup_size) * total_n) + d_mat->n;
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -129,12 +140,12 @@ std::vector<CL_REAL> spmv_GMVM_param(struct mat_t* d_mat, const std::vector<CL_R
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU(r + 1, nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, total_nnz, units_REAL, 0, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_mat->nnz), units_REAL, 0, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, total_nnz, units_REAL, 0, instr_count);
 
 	return dst_y;
 }

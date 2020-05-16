@@ -18,7 +18,7 @@ done
 for file in ./SUITE/SEQ/*.txt
 do
     echo "Parsing file $file..."
-    python3 parse_output.py $file 5 10 50 90 95
+    python3 parse_output_seq.py $file 5 10 50 90 95
 done
 
 for file in ./OCCUPANCY/*.txt

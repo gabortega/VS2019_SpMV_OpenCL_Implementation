@@ -61,22 +61,32 @@ std::vector<CL_REAL> spmv_ELL_param(struct ellg_t* d_ell, const std::vector<CL_R
 	//decrement all values
 	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]--;
 	//
+	unsigned long long total_n = d_ell->n;
+	unsigned long long total_nnz = d_ell->nnz;
+	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
-	//d_ell->a + d_x + dst_y
-	unsigned long long units_REAL = 2 * d_ell->n * d_ell->nell[d_ell->n] + d_ell->n;
-	//d_ell->jcoeff
-	unsigned long long units_IndexType = d_ell->n * d_ell->nell[d_ell->n];
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
 	long double instr_count = 4 + 1 + *(d_ell->nell + d_ell->n) * 4 + 2 + *(d_ell->nell + d_ell->n) * 9 + 2;
+	instr_count *= d_ell->n;
 	//
 #else
+	total_n = thread_count;
+	IndexType row_len = d_ell->nnz / d_ell->n;
+	total_nnz = row_len * thread_count;
 	//
 	//Instruction count
 	long double instr_count = 5 + 1 + *(d_ell->nell + d_ell->n) * 4 + 2 + *(d_ell->nell + d_ell->n) * 9 + 4;
+	instr_count *= jc::best_fit(thread_count, workgroup_size);
 	//
 #endif
+	//
+	//d_ell->a + d_x + dst_y
+	unsigned long long units_REAL = 2 * total_n * d_ell->nell[d_ell->n] + d_ell->n;
+	//d_ell->jcoeff
+	unsigned long long units_IndexType = total_n * d_ell->nell[d_ell->n];
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -148,12 +158,12 @@ std::vector<CL_REAL> spmv_ELL_param(struct ellg_t* d_ell, const std::vector<CL_R
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU(r + 1, nanoseconds, (d_ell->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_ell->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]++;
 
@@ -172,22 +182,31 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELL_param(struct ellg_t* d_ell, const std::
 	//decrement all values
 	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]--;
 	//
+	unsigned long long total_n = d_ell->n;
+	unsigned long long total_nnz = d_ell->nnz;
+	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
-	//d_ell->a + d_x + dst_y
-	unsigned long long units_REAL = 2 * d_ell->n * d_ell->nell[d_ell->n] + d_ell->n;
-	//d_ell->jcoeff
-	unsigned long long units_IndexType = d_ell->n * d_ell->nell[d_ell->n];
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
 	long double instr_count = 4 + 1 + *(d_ell->nell + d_ell->n) * 4 + 2 + *(d_ell->nell + d_ell->n) * 9 + 2;
+	instr_count *= d_ell->n;
 	//
 #else
+	total_n = thread_count;
+	IndexType row_len = d_ell->nnz / d_ell->n;
+	total_nnz = row_len * thread_count;
 	//
 	//Instruction count
 	long double instr_count = 5 + 1 + *(d_ell->nell + d_ell->n) * 4 + 2 + *(d_ell->nell + d_ell->n) * 9 + 4;
+	instr_count *= jc::best_fit(thread_count, workgroup_size);
 	//
 #endif
+	//d_ell->a + d_x + dst_y
+	unsigned long long units_REAL = 2 * total_n * d_ell->nell[d_ell->n] + d_ell->n;
+	//d_ell->jcoeff
+	unsigned long long units_IndexType = total_n * d_ell->nell[d_ell->n];
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -259,12 +278,12 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELL_param(struct ellg_t* d_ell, const std::
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU(r + 1, nanoseconds, (d_ell->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_ell->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_ell->stride * *(d_ell->nell + d_ell->n); i++) d_ell->jcoeff[i]++;
 
@@ -319,25 +338,33 @@ std::vector<CL_REAL> spmv_ELLG_param(struct ellg_t* d_ellg, const std::vector<CL
     //decrement all values
     for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]--;
 	//
+	unsigned long long total_n = d_ellg->n;
+	unsigned long long total_nnz = d_ellg->nnz;
+	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
-	unsigned long long total_nell;
-	IndexType i;
-	for (i = 0, total_nell = 0; i < d_ellg->n; i++) total_nell += d_ellg->nell[i];
-	//d_ellg->a + d_x + dst_y
-	unsigned long long units_REAL = 2 * total_nell + d_ellg->n;
-	//d_ellg->jcoeff + d_ellg->nell
-	unsigned long long units_IndexType = total_nell + d_ellg->n;
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
 	long double instr_count = 6 + 1 + *(d_ellg->nell + d_ellg->n) * 4 + 2 + *(d_ellg->nell + d_ellg->n) * 9 + 2;
+	instr_count *= d_ellg->n;
 	//
 #else
+	total_n = thread_count;
+	IndexType row_len = d_ellg->nnz / d_ellg->n;
+	total_nnz = row_len * thread_count;
 	//
 	//Instruction count
 	long double instr_count = 7 + 1 + *(d_ellg->nell + d_ellg->n) * 4 + 2 + *(d_ellg->nell + d_ellg->n) * 9 + 4;
+	instr_count *= jc::best_fit(thread_count, workgroup_size);
 	//
 #endif
+	//
+	IndexType i;
+	//d_ellg->a + d_x + dst_y
+	unsigned long long units_REAL = 2 * total_nnz + d_ellg->n;
+	//d_ellg->jcoeff + d_ellg->nell
+	unsigned long long units_IndexType = total_nnz + total_n;
+	//
     cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -412,12 +439,12 @@ std::vector<CL_REAL> spmv_ELLG_param(struct ellg_t* d_ellg, const std::vector<CL
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU(r + 1, nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
         total_nanoseconds += nanoseconds;
     }
     queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
     double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]++;
 
@@ -436,25 +463,32 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELLG_param(struct ellg_t* d_ellg, const std
 	//decrement all values
 	for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]--;
 	//
+	unsigned long long total_n = d_ellg->n;
+	unsigned long long total_nnz = d_ellg->nnz;
+	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
-	unsigned long long total_nell;
-	IndexType i;
-	for (i = 0, total_nell = 0; i < d_ellg->n; i++) total_nell += d_ellg->nell[i];
-	//d_ellg->a + d_x + dst_y
-	unsigned long long units_REAL = 2 * total_nell + d_ellg->n;
-	//d_ellg->jcoeff + d_ellg->nell
-	unsigned long long units_IndexType = total_nell + d_ellg->n;
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
 	long double instr_count = 6 + 1 + *(d_ellg->nell + d_ellg->n) * 4 + 2 + *(d_ellg->nell + d_ellg->n) * 9 + 2;
+	instr_count *= d_ellg->n;
 	//
 #else
+	total_n = thread_count;
+	IndexType row_len = d_ellg->nnz / d_ellg->n;
+	total_nnz = row_len * thread_count;
 	//
 	//Instruction count
 	long double instr_count = 7 + 1 + *(d_ellg->nell + d_ellg->n) * 4 + 2 + *(d_ellg->nell + d_ellg->n) * 9 + 4;
+	instr_count *= jc::best_fit(thread_count, workgroup_size);
 	//
 #endif
+	//
+	//d_ellg->a + d_x + dst_y
+	unsigned long long units_REAL = 2 * total_nnz + d_ellg->n;
+	//d_ellg->jcoeff + d_ellg->nell
+	unsigned long long units_IndexType = total_nnz + total_n;
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -530,12 +564,12 @@ std::vector<CL_REAL> spmv_TRANSPOSED_ELLG_param(struct ellg_t* d_ellg, const std
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU(r + 1, nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_ellg->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_ellg->stride * *(d_ellg->nell + d_ellg->n); i++) d_ellg->jcoeff[i]++;
 
@@ -593,25 +627,35 @@ std::vector<CL_REAL> spmv_HLL_param(struct hll_t* d_hll, const std::vector<CL_RE
 	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]--;
 	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]--;
 	//
+	unsigned long long total_n = d_hll->n;
+	unsigned long long total_nnz = d_hll->nnz;
+	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
-	unsigned long long total_nell;
-	IndexType i;
-	for (i = 0, total_nell = 0; i < d_hll->nhoff; i++) total_nell += d_hll->nell[i];
-	//d_hll->a + d_x + dst_y
-	unsigned long long units_REAL = 2 * total_nell + d_hll->n;
-	//d_hll->jcoeff + d_hll->nell + d_hll->hoff
-	unsigned long long units_IndexType = total_nell + d_hll->n + d_hll->n;
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
 	long double instr_count = 12 + 1 + *(d_hll->nell + d_hll->nhoff - 1) * 4 + 2 + *(d_hll->nell + d_hll->nhoff - 1) * 10 + 2;
+	instr_count *= d_hll->n;
 	//
 #else
+	total_n = thread_count;
+	IndexType row_len = d_hll->nnz / d_hll->n;
+	total_nnz = row_len * thread_count;
 	//
 	//Instruction count
 	long double instr_count = 11 + 1 + *(d_hll->nell + d_hll->nhoff - 1) * 4 + 2 + *(d_hll->nell + d_hll->nhoff - 1) * 10 + 4;
+	instr_count *= jc::best_fit(thread_count, workgroup_size);
 	//
 #endif
+	//
+	unsigned long long total_nell;
+	IndexType i, nhacks = (total_n + HLL_HACKSIZE - 1) / HLL_HACKSIZE;
+	for (i = 0, total_nell = 0; i < nhacks; i++) total_nell += d_hll->nell[i % d_hll->nhoff];
+	//d_hll->a + d_x + dst_y
+	unsigned long long units_REAL = 2 * total_nell + d_hll->n;
+	//d_hll->jcoeff + d_hll->nell + d_hll->hoff
+	unsigned long long units_IndexType = total_nell + total_n + total_n;
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -694,12 +738,12 @@ std::vector<CL_REAL> spmv_HLL_param(struct hll_t* d_hll, const std::vector<CL_RE
 				cl::NDRange(jc::best_fit(thread_count, workgroup_size)),
 #endif
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU(r + 1, nanoseconds, (d_hll->nnz), units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU(r + 1, nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU(average_nanoseconds, (d_hll->nnz), units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU(average_nanoseconds, total_nnz, units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_hll->total_mem; i++) d_hll->jcoeff[i]++;
 	for (IndexType i = 0; i < d_hll->nhoff; i++) d_hll->hoff[i]++;

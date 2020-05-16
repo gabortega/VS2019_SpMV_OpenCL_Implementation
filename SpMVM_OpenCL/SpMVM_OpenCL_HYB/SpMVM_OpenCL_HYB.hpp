@@ -123,6 +123,7 @@ std::vector<CL_REAL> spmv_HYB_ELL_param(struct hybellg_t* d_hyb, const std::vect
 	if (d_hyb->ellg.nnz > 0)
 	{
 		instr_count_ell = 4 + 1 + *(d_hyb->ellg.nell + d_hyb->n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->n) * 9 + 2;
+		instr_count_ell *= d_hyb->ellg.n;
 	}
 	//
 	//Instruction count
@@ -130,6 +131,7 @@ std::vector<CL_REAL> spmv_HYB_ELL_param(struct hybellg_t* d_hyb, const std::vect
 	if (d_hyb->csr.nnz > 0)
 	{
 		instr_count_csr = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+		instr_count_csr *= d_hyb->csr.n;
 	}
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
@@ -400,6 +402,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG_param(struct hybellg_t* d_hyb, const std::vec
 	if (d_hyb->ellg.nnz > 0)
 	{
 		instr_count_ellg = 6 + 1 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 4 + 2 + *(d_hyb->ellg.nell + d_hyb->ellg.n) * 9 + 2;
+		instr_count_ellg *= d_hyb->ellg.n;
 	}
 	//
 	//Instruction count
@@ -407,6 +410,7 @@ std::vector<CL_REAL> spmv_HYB_ELLG_param(struct hybellg_t* d_hyb, const std::vec
 	if (d_hyb->csr.nnz > 0)
 	{
 		instr_count_csr = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+		instr_count_csr *= d_hyb->csr.n;
 	}
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
@@ -685,6 +689,7 @@ std::vector<CL_REAL> spmv_HYB_HLL_param(struct hybhll_t* d_hyb, const std::vecto
 	if (d_hyb->hll.nnz > 0)
 	{
 		instr_count_hll = 12 + 1 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 4 + 2 + *(d_hyb->hll.nell + d_hyb->hll.nhoff - 1) * 10 + 2;
+		instr_count_hll *= d_hyb->hll.n;
 	}
 	//
 	//Instruction count
@@ -692,6 +697,7 @@ std::vector<CL_REAL> spmv_HYB_HLL_param(struct hybhll_t* d_hyb, const std::vecto
 	if (d_hyb->csr.nnz > 0)
 	{
 		instr_count_csr = 6 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+		instr_count_csr *= d_hyb->csr.n;
 	}
 	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);

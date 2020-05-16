@@ -67,26 +67,40 @@ std::vector<CL_REAL> spmv_JAD_param(struct jad_t* d_jad, const std::vector<CL_RE
 	for (IndexType i = 0; i < d_jad->total; i++) d_jad->ja[i]--;
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
-	unsigned long long for_iters = (d_jad->njad[d_jad->n] + max_njad_per_wg - 1) / max_njad_per_wg;
-	//jad->a + d_x + dst_y
-	unsigned long long units_REAL = d_jad->nnz + d_jad->nnz + d_jad->n * for_iters;
-	//jad->ia + jad->ja + jad->njad + jad->perm
-	unsigned long long units_IndexType = ((d_jad->njad[d_jad->n] + 1) * (jc::best_fit(d_jad->n, workgroup_size) + workgroup_size - 1) / workgroup_size) + d_jad->nnz + 3 * d_jad->n * for_iters;
+	//
+	unsigned long long total_n = d_jad->n;
+	unsigned long long total_nnz = d_jad->nnz;
 #if !OVERRIDE_THREADS
 	//
 	//Instruction count
-	long double instr_count = 0;
+	long double instr_count = 0, tmp_instr_count = 0;
 	for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += max_njad_per_wg)
-		instr_count += 1 + 1 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 2 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 6 + 4 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 5 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 16 + 4;
+		instr_count += 1 + 1 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 2 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 6 + 6 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 5 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 16 + 4;
+	instr_count *= d_jad->n;
+	for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += max_njad_per_wg)
+		tmp_instr_count += 1 + 1 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 2 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 6;
+	tmp_instr_count *= (jc::best_fit(d_jad->n, workgroup_size) - d_jad->n);
+	instr_count += tmp_instr_count;
 	//
 #else
+	total_n = thread_count;
+	IndexType row_len = d_jad->nnz / d_jad->n;
+	total_nnz = row_len * thread_count;
 	//
 	//Instruction count
 	long double instr_count = 0;
 	for (IndexType i = 0; i < *(d_jad->njad + d_jad->n); i += max_njad_per_wg)
-		instr_count += 2 + 1 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 2 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 6 + 4 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 5 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 16 + 6;
+		instr_count += 2 + 1 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 2 + ((double)min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) / workgroup_size) * 4 + 6 + 6 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 5 + min(*(d_jad->njad + d_jad->n) - i, max_njad_per_wg) * 16 + 6;
+	instr_count *= jc::best_fit(thread_count, workgroup_size);
 	//
 #endif
+	//
+	unsigned long long for_iters = (d_jad->njad[d_jad->n] + max_njad_per_wg - 1) / max_njad_per_wg;
+	//jad->a + d_x + dst_y
+	unsigned long long units_REAL = total_nnz + total_nnz + d_jad->n * for_iters;
+	//jad->ia + jad->ja + jad->njad + jad->perm
+	unsigned long long units_IndexType = ((d_jad->njad[d_jad->n] + 1) * (jc::best_fit(total_n, workgroup_size) + workgroup_size - 1) / workgroup_size) + total_nnz + 2 * total_n * for_iters + d_jad->n * for_iters;
+	//
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used

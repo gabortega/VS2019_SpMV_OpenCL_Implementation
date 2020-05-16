@@ -62,39 +62,45 @@ std::vector<CL_REAL> spmv_CSR_param(struct csr_t* d_csr, const std::vector<CL_RE
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]--;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]--;
 	//
+	unsigned long long total_n = d_csr->n;
+	unsigned long long total_nnz = d_csr->nnz;
+	//
 	IndexType i, row_len = 0, coop, repeat = 1, nworkgroups, row_len_sqrt = 0;
-	for (i = 0; i < d_csr->n; i++) row_len += d_csr->ia[i + 1] - d_csr->ia[i];
-	row_len /= d_csr->n;
+	row_len = d_csr->nnz/d_csr->n;
 	row_len_sqrt = sqrt(row_len);
 	for (coop = 1; coop < 32 && row_len_sqrt >= coop; coop <<= 1);
+	//
 #if !OVERRIDE_THREADS
 	nworkgroups = 1 + (d_csr->n * coop - 1) / (repeat * workgroup_size);
 	if (nworkgroups > CSR_WORKGROUP_COUNT_THRESHOLD)
 		for (repeat = 1; (1 + (d_csr->n * coop - 1) / ((repeat + 1) * workgroup_size)) > CSR_WORKGROUP_COUNT_THRESHOLD; repeat++);
 	nworkgroups = 1 + (d_csr->n * coop - 1) / (repeat * workgroup_size);
+	//
+	//Instruction count
+	long double instr_count = 8 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
+	instr_count *= d_csr->n;
+	//
 #else
 	nworkgroups = 1 + (thread_count * coop - 1) / (repeat * workgroup_size);
 	if (nworkgroups > (thread_count / workgroup_size))
 		for (repeat = 1; (1 + (thread_count * coop - 1) / ((repeat + 1) * workgroup_size)) > (thread_count / workgroup_size); repeat++);
 	nworkgroups = 1 + (thread_count * coop - 1) / (repeat * workgroup_size);
+	//
+	total_n = thread_count;
+	total_nnz = row_len * thread_count;
+	//
+	//Instruction count
+	long double instr_count = 14 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 14);
+	instr_count *= nworkgroups * workgroup_size;
+	//
 #endif
 	//
 	std::vector<CL_REAL> dst_y(d_x.size(), 0);
 	//d_csr->a + d_x + dst_y
-	unsigned long long units_REAL = d_csr->nnz + d_csr->nnz + d_csr->n;
+	unsigned long long units_REAL = total_nnz + total_nnz + d_csr->n;
 	//d_csr->ia + d_csr->ja
-	unsigned long long units_IndexType = d_csr->n + d_csr->nnz;
-#if !OVERRIDE_THREADS
+	unsigned long long units_IndexType = total_n + total_nnz;
 	//
-	//Instruction count
-	long double instr_count = 8 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 9);
-	//
-#else
-	//
-	//Instruction count
-	long double instr_count = 14 + 1 + repeat * 4 + 2 + repeat * (5 + 1 + ((double)row_len / coop) * 12 + 5 + ((double)row_len / coop) * 8 + 2 + 1 + (max(1, log2(coop / 2)) * 4) + 2 + max(1, log2(coop / 2)) * 7 + 14);
-	//
-#endif
 	cl::Device device = jc::get_device(CL_DEVICE_TYPE_GPU);
 	//
 	//Print GPU used
@@ -164,12 +170,12 @@ std::vector<CL_REAL> spmv_CSR_param(struct csr_t* d_csr, const std::vector<CL_RE
 				queue,
 				cl::NDRange(nworkgroups * workgroup_size),
 				cl::NDRange(workgroup_size));
-		printRunInfoGPU_CSR(r + 1, nanoseconds, (d_csr->nnz), coop, units_REAL, units_IndexType, instr_count);
+		printRunInfoGPU_CSR(r + 1, nanoseconds, total_nnz, coop, units_REAL, units_IndexType, instr_count);
 		total_nanoseconds += nanoseconds;
 	}
 	queue.enqueueReadBuffer(dst_y_buffer, CL_TRUE, 0, byte_size_dst_y, dst_y.data());
 	double average_nanoseconds = total_nanoseconds / (double)REPEAT;
-	printAverageRunInfoGPU_CSR(average_nanoseconds, (d_csr->nnz), coop, units_REAL, units_IndexType, instr_count);
+	printAverageRunInfoGPU_CSR(average_nanoseconds, total_nnz, coop, units_REAL, units_IndexType, instr_count);
 	//increment all values
 	for (IndexType i = 0; i < d_csr->n + 1; i++) d_csr->ia[i]++;
 	for (IndexType i = 0; i < d_csr->nnz; i++) d_csr->ja[i]++;
